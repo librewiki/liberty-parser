@@ -14,6 +14,14 @@ function TextNode(text)
     this.type = "TEXT";
     this.text = text;
 }
+TextNode.prototype.Process = function(wikiparser){
+	
+	var markers = [];
+	for(i in this.text)
+	{
+		
+	}
+};
 TextNode.prototype.Render = function(wikiparser)
 {
 	var res = [];
@@ -35,10 +43,36 @@ function LinkNode()
 {
     
 }
-function ReferenceNode()
+function RefNode()
 {
     
 }
+function ReferenceNode()
+{
+	
+};
+
+function BoldNode()
+{
+	this.type = "BOLD";
+	this.children = [];
+}
+BoldNode.prototype.Render = function(wikiparser)
+{
+	res = [];
+	res.push("<b>");
+	for(i in this.children)
+	{
+		var it = this.children[i];
+		res.push(it.Render(wikiparser));
+	}
+	res.push("</b>");
+	return res.join("");
+};
+BoldNode.prototype.Process = function(wikiparser)
+{
+	
+};
 function TableNode()
 {
 	this.NAME = "TABLE";
@@ -255,6 +289,31 @@ WikiParser.prototype.AddMark = function(marker,position){
 WikiParser.prototype.DoBasicMarkTag = function(tagName){
     
 };
+WikiParser.prototype.TextNodeParse = function(node){
+	var i = 0;
+	for(i = 0 ; i < node.children.length ; i++)
+	{
+		var iter = node.children[i];
+		if(iter.children != null )
+		{
+			node.children[i] = this.TextNodeParse(iter);
+		}
+		else if(iter.type == "TEXT")
+		{
+			var res = iter.Process();
+			var tempA = node.children.splice(i);
+			node.children.pop();
+			res.forEach(function(value,idx,arr){
+				node.children.push(value);
+			});
+			temp.forEach(function(value,idx,arr){
+				node.children.push(value);
+			});
+			
+		}
+	}
+	return node;
+};
 WikiParser.prototype.Parse = function(text){
     for(i in this.hookers){
 		var hooker = this.hookers[i];
@@ -289,7 +348,9 @@ WikiParser.prototype.Parse = function(text){
 		}
 		lastIdx = iter.position;
 	}
-	return stack[0];
+	
+	
+	return this.TextNodeParse(stack[0]);
 };
 function NowikiHooker(){
     this.NAME = "NOWIKI HOOKER";
