@@ -462,7 +462,7 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
     }
 };
 function Parse(text){
-
+    console.log("parser in");
     var wikiparser = new WikiParser();
     wikiparser.AddHooker(new NowikiHooker());
     wikiparser.AddHooker(new TemplateHooker());
