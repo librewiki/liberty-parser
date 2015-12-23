@@ -22,6 +22,7 @@ TextNode.prototype.Process = function(wikiparser){
 //텍스트 노드안에 있는 링크, 문단, 헤딩, 볼드체등을 파싱, 노드 트리구조로 만든 후 반환한다.
 //여기는 다시 짜야 한다.
 //텍스트를 char순회가 아니라 indexOf혹은 search를 이용하여 각 태그위치에 표시를 찍고 이것을 돌면서 파싱해야 한다.
+/*
 	var stack = [{
         nodeClass:null,
         pos:0,
@@ -72,6 +73,7 @@ TextNode.prototype.Process = function(wikiparser){
         }
     }
     return stack[0].children;
+	*/
 };
 TextNode.prototype.Render = function(wikiparser)
 {
@@ -105,10 +107,27 @@ function BoldNode()
 }
 BoldNode.prototype.Render = function(wikiparser)
 {
-	res = [];
+	var res = [];
+	if(this.children[0].type == "TEXT")
+	{
+		if(this.children[0].text.startsWith("'''"))
+		{
+			this.children[0].text = this.children[0].text.substr(3);
+		}
+	}
+	if(this.children[this.children.length - 1].type == "TEXT")
+	{
+		var t = this.children[this.children.length - 1].text;
+		if(t.endsWith("'''"))
+		{
+			t = t.substring(0, t.length -3);
+			this.children[this.children.length - 1].text = t;
+		}
+	}
 	res.push("<b>");
 	for(i in this.children)
 	{
+		
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
@@ -336,34 +355,7 @@ WikiParser.prototype.DoBasicMarkTag = function(tagName){
     
 };
 WikiParser.prototype.TextNodeParse = function(node){
-	var i = 0;
-	for(i = 0 ; i < node.children.length ; i++)
-	{
-		var iter = node.children[i];
-		if(iter.children != null )
-		{
-			node.children[i] = this.TextNodeParse(iter);
-		}
-		else if(iter.type == "TEXT")
-		{
-			var res = iter.Process();
-            if(res.length == 1 && res.type == "TEXT")
-            {
-                
-            }
-            else
-            {
-                var tempA = node.children.splice(i);
-                node.children.pop();
-                res.forEach(function(value,idx,arr){
-                    node.children.push(value);
-                });
-                tempA.forEach(function(value,idx,arr){
-                    node.children.push(value);
-                });
-            }
-		}
-	}
+	
 	return node;
 };
 WikiParser.prototype.Parse = function(text){
@@ -465,12 +457,34 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
         wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
     }
 };
+function BoldTagHooker(){
+	this.NAME = "BOLDTAG HOOKER";
+	this.NODE = BoldNode;
+}
+BoldTagHooker.prototype.DoMark = function(wikiparser,text){
+	var idx = 0;
+	var isStartTag = false;
+	while((idx = text.indexOf("'''", idx)) != -1){
+		var tagType = MARK_TYPE.OPEN_TAG;
+		if(!isStartTag)
+		{
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+		}
+		else
+		{
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
+		}
+		isStartTag = !isStartTag;
+		idx += 3;
+    }
+}
 function Parse(text){
     
     var wikiparser = new WikiParser();
     wikiparser.AddHooker(new NowikiHooker());
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
+	wikiparser.AddHooker(new BoldTagHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
