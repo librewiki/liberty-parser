@@ -7,7 +7,7 @@ function NowikiNode(text)
     this.text = text;
 }
 NowikiNode.prototype.Render = function(){
-  return this.text.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");  
+  return this.text.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");
 };
 function TextNode(text)
 {
@@ -15,7 +15,7 @@ function TextNode(text)
     this.text = text;
 }
 TextNode.prototype.Process = function(wikiparser){
-	
+
 	var stack = [{
         nodeClass:null,
         pos:0,
@@ -53,7 +53,7 @@ TextNode.prototype.Process = function(wikiparser){
                 stack[stack.length - 1].children.push(node);
                 lastIdx = i + 1;
             }
-            
+
         }
 	}
     lastIdx++;
@@ -73,23 +73,23 @@ TextNode.prototype.Render = function(wikiparser)
 };
 function HeadingNode()
 {
-    
+
 }
 function ArticleNode()
 {
-    
+
 }
 function LinkNode()
 {
-    
+
 }
 function RefNode()
 {
-    
+
 }
 function ReferenceNode()
 {
-	
+
 };
 
 function BoldNode()
@@ -111,7 +111,7 @@ BoldNode.prototype.Render = function(wikiparser)
 };
 BoldNode.prototype.Process = function(wikiparser)
 {
-	
+
 };
 function TableNode()
 {
@@ -161,10 +161,10 @@ TableNode.prototype.Process = function(){
 				{
 					res.push([]);
 					row++;
-					
+
 					isStartCell = 0;
 					posPreBar = -1;
-					
+
 				}
 				else if(temp[j] == "|")
 				{
@@ -207,7 +207,7 @@ TableNode.prototype.Process = function(){
 						isStartCell = 0;
 						posPreBar = j;
 					}
-					
+
 				}
 			}
 			if(isStartCell != 0)
@@ -216,7 +216,7 @@ TableNode.prototype.Process = function(){
 				var newTextNode = new TextNode(t);
 				item.children.push(newTextNode);
 				children.push(newTextNode);
-				
+
 			}
 		}
 		else
@@ -269,7 +269,7 @@ function TemplateNode(hooker)
 }
 TemplateNode.prototype.Process = function()
 {
-	
+
 };
 TemplateNode.prototype.Render = function(wikiparser)
 {
@@ -327,7 +327,7 @@ WikiParser.prototype.AddMark = function(marker,position){
     }
 };
 WikiParser.prototype.DoBasicMarkTag = function(tagName){
-    
+
 };
 WikiParser.prototype.TextNodeParse = function(node){
 	var i = 0;
@@ -343,7 +343,7 @@ WikiParser.prototype.TextNodeParse = function(node){
 			var res = iter.Process();
             if(res.length == 1 && res.type == "TEXT")
             {
-                
+
             }
             else
             {
@@ -356,8 +356,8 @@ WikiParser.prototype.TextNodeParse = function(node){
                     node.children.push(value);
                 });
             }
-			
-			
+
+
 		}
 	}
 	return node;
@@ -400,8 +400,8 @@ WikiParser.prototype.Parse = function(text){
     {
         stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, text.length)));
     }
-	
-	
+
+
 	return this.TextNodeParse(stack[0]);
 };
 function NowikiHooker(){
@@ -462,13 +462,15 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
     }
 };
 function Parse(text){
-    
+
     var wikiparser = new WikiParser();
     wikiparser.AddHooker(new NowikiHooker());
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
-	
+
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
 	window.document.getElementById("preview").innerHTML = res;
 }
+
+module.exports.Parse = Parse;
