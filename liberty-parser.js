@@ -16,19 +16,59 @@ function TextNode(text)
 }
 TextNode.prototype.Process = function(wikiparser){
 	
-	var markers = [];
-	for(i in this.text)
+	var stack = [{
+        nodeClass:null,
+        pos:0,
+        children:[]
+    }];
+    var lastIdx = 0;
+    var i;
+	for(i = 0 ; i < this.text.length ; i++)
 	{
-		
+		if(this.text.substr(i,3) == "'''")
+        {
+            if(stack[stack.length - 1].nodeClass != BoldNode)
+            {
+                var node = new TextNode(this.text.substring(lastIdx, i));
+                if(node.text.length != 0)
+                {
+                    stack[stack.length - 1].children.push(node);
+                }
+                stack.push({
+                    nodeClass:BoldNode,
+                    pos:i,
+                    children:[]
+                });
+                i+=2;
+                lastIdx = i + 1;
+            }
+            else
+            {
+                var item = stack.pop();
+                var node = new item.nodeClass();
+                var node2 = new TextNode(this.text.substring(lastIdx, i));
+                node.children = item.children;
+                node.children.push(node2);
+                node.Process(wikiparser);
+                stack[stack.length - 1].children.push(node);
+                lastIdx = i + 1;
+            }
+            
+        }
 	}
+    lastIdx++;
+    if(lastIdx < this.text.length - 1)
+    {
+        var node = new TextNode(this.text.substring(lastIdx, i));
+        if(node.text.length != 0)
+        {
+            stack[stack.length - 1].children.push(node);
+        }
+    }
+    return stack[0].children;
 };
 TextNode.prototype.Render = function(wikiparser)
 {
-	var res = [];
-	var i = 0;
-	for(i = 0; i < this.length ; i++){
-		
-	}
 	return this.text;
 };
 function HeadingNode()
@@ -301,14 +341,22 @@ WikiParser.prototype.TextNodeParse = function(node){
 		else if(iter.type == "TEXT")
 		{
 			var res = iter.Process();
-			var tempA = node.children.splice(i);
-			node.children.pop();
-			res.forEach(function(value,idx,arr){
-				node.children.push(value);
-			});
-			temp.forEach(function(value,idx,arr){
-				node.children.push(value);
-			});
+            if(res.length == 1 && res.type == "TEXT")
+            {
+                
+            }
+            else
+            {
+                var tempA = node.children.splice(i);
+                node.children.pop();
+                res.forEach(function(value,idx,arr){
+                    node.children.push(value);
+                });
+                tempA.forEach(function(value,idx,arr){
+                    node.children.push(value);
+                });
+            }
+			
 			
 		}
 	}
@@ -348,6 +396,10 @@ WikiParser.prototype.Parse = function(text){
 		}
 		lastIdx = iter.position;
 	}
+    if(lastIdx <= text.length -1)
+    {
+        stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, text.length)));
+    }
 	
 	
 	return this.TextNodeParse(stack[0]);
