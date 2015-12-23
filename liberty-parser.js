@@ -19,7 +19,9 @@ function TextNode(text)
     this.text = text;
 }
 TextNode.prototype.Process = function(wikiparser){
-	
+//텍스트 노드안에 있는 링크, 문단, 헤딩, 볼드체등을 파싱, 노드 트리구조로 만든 후 반환한다.
+//여기는 다시 짜야 한다.
+//텍스트를 char순회가 아니라 indexOf혹은 search를 이용하여 각 태그위치에 표시를 찍고 이것을 돌면서 파싱해야 한다.
 	var stack = [{
         nodeClass:null,
         pos:0,
@@ -159,6 +161,8 @@ TableNode.prototype.Process = function(){
 		{
 			posPreBar = -1;
 			var temp = iter.text;
+//테이블의 셀을 구한다.
+//셀 파싱 규칙은 '|속성|셀 내용\n'이 기본이며, '|셀 내용\n'이나 '||셀 내용'은 변칙일 뿐이다
 			for(j = 0 ; j < temp.length ; j++)
 			{
 				if(temp.substr(j,2) == "|-")
@@ -211,7 +215,6 @@ TableNode.prototype.Process = function(){
 						isStartCell = 0;
 						posPreBar = j;
 					}
-					
 				}
 			}
 			if(isStartCell != 0)
@@ -220,7 +223,6 @@ TableNode.prototype.Process = function(){
 				var newTextNode = new TextNode(t);
 				item.children.push(newTextNode);
 				children.push(newTextNode);
-				
 			}
 		}
 		else
@@ -360,8 +362,6 @@ WikiParser.prototype.TextNodeParse = function(node){
                     node.children.push(value);
                 });
             }
-			
-			
 		}
 	}
 	return node;
@@ -471,7 +471,7 @@ function Parse(text){
     wikiparser.AddHooker(new NowikiHooker());
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
-	
+	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
 	window.document.getElementById("preview").innerHTML = res;
