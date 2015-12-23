@@ -478,6 +478,23 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 		idx += 3;
     }
 }
+BRTagHooker.prototype.DoMark = function(wikiparser,text){
+	var idx = 0;
+	var isStartTag = false;
+	while((idx = text.indexOf("'''", idx)) != -1){
+		var tagType = MARK_TYPE.OPEN_TAG;
+		if(!isStartTag)
+		{
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+		}
+		else
+		{
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
+		}
+		isStartTag = !isStartTag;
+		idx += 3;
+    }
+}
 function Parse(text){
     
     var wikiparser = new WikiParser();
