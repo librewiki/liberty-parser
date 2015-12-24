@@ -106,7 +106,7 @@ function BoldNode()
 }
 function BRNode()
 {
-    
+
 }
 BoldNode.prototype.Render = function(wikiparser)
 {
@@ -481,11 +481,11 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 		idx += 3;
     }
 }
-function BRTagHooker(){
+function BrTagHooker(){
     this.NAME = "BRTAG HOOKER";
-    this.NODE = BRNode;
+    this.NODE = BrNode;
 }
-BRTagHooker.prototype.DoMark = function(wikiparser,text){
+BrTagHooker.prototype.DoMark = function(wikiparser,text){
 	var idx = 0;
 	var isStartTag = false;
 	while((idx = text.indexOf("'''", idx)) != -1){
@@ -509,7 +509,7 @@ function Parse(text){
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
 	wikiparser.AddHooker(new BoldTagHooker());
-    wikiparser.AddHooker(new BRTagHooker());
+    wikiparser.AddHooker(new BrTagHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
