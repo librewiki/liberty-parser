@@ -19,14 +19,10 @@ function TextNode(text)
     this.text = text;
 }
 TextNode.prototype.Process = function(wikiparser){
-<<<<<<< HEAD
-
-=======
 //텍스트 노드안에 있는 링크, 문단, 헤딩, 볼드체등을 파싱, 노드 트리구조로 만든 후 반환한다.
 //여기는 다시 짜야 한다.
 //텍스트를 char순회가 아니라 indexOf혹은 search를 이용하여 각 태그위치에 표시를 찍고 이것을 돌면서 파싱해야 한다.
 /*
->>>>>>> for_damezuma
 	var stack = [{
         nodeClass:null,
         pos:0,
@@ -131,7 +127,7 @@ BoldNode.prototype.Render = function(wikiparser)
 	res.push("<b>");
 	for(i in this.children)
 	{
-		
+
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
@@ -238,10 +234,6 @@ TableNode.prototype.Process = function(){
 						isStartCell = 0;
 						posPreBar = j;
 					}
-<<<<<<< HEAD
-
-=======
->>>>>>> for_damezuma
 				}
 			}
 			if(isStartCell != 0)
@@ -250,10 +242,6 @@ TableNode.prototype.Process = function(){
 				var newTextNode = new TextNode(t);
 				item.children.push(newTextNode);
 				children.push(newTextNode);
-<<<<<<< HEAD
-
-=======
->>>>>>> for_damezuma
 			}
 		}
 		else
@@ -367,40 +355,7 @@ WikiParser.prototype.DoBasicMarkTag = function(tagName){
 
 };
 WikiParser.prototype.TextNodeParse = function(node){
-<<<<<<< HEAD
-	var i = 0;
-	for(i = 0 ; i < node.children.length ; i++)
-	{
-		var iter = node.children[i];
-		if(iter.children != null )
-		{
-			node.children[i] = this.TextNodeParse(iter);
-		}
-		else if(iter.type == "TEXT")
-		{
-			var res = iter.Process();
-            if(res.length == 1 && res.type == "TEXT")
-            {
 
-            }
-            else
-            {
-                var tempA = node.children.splice(i);
-                node.children.pop();
-                res.forEach(function(value,idx,arr){
-                    node.children.push(value);
-                });
-                tempA.forEach(function(value,idx,arr){
-                    node.children.push(value);
-                });
-            }
-
-
-		}
-	}
-=======
-	
->>>>>>> for_damezuma
 	return node;
 };
 WikiParser.prototype.Parse = function(text){
@@ -541,17 +496,13 @@ BRTagHooker.prototype.DoMark = function(wikiparser,text){
     }
 }
 function Parse(text){
-    console.log("parser in");
+
     var wikiparser = new WikiParser();
     wikiparser.AddHooker(new NowikiHooker());
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
-<<<<<<< HEAD
-
-=======
 	wikiparser.AddHooker(new BoldTagHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
->>>>>>> for_damezuma
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
     console.log(res);
