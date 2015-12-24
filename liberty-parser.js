@@ -2,7 +2,7 @@
 //EDITING BY DAMEZUMA
 //각 클래스 메소드 별 역할
 //Render() -> 노드를 HTML로 변환한다.
-//Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다. 
+//Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다.
 //테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
 
 function NowikiNode(text)
@@ -474,7 +474,8 @@ function Parse(text){
 
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
-	window.document.getElementById("preview").innerHTML = res;
+    console.log(res);
+    return res;
+//	window.document.getElementById("preview").innerHTML = res;
 }
-
 module.exports.Parse = Parse;
