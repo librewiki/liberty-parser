@@ -370,6 +370,11 @@ WikiParser.prototype.AddMark = function(marker,position){
             var a = this.markList.splice(i);
 			this.markList.push(item);
 			for(i in a)this.markList.push(a[i]);
+            /* 이거 그냥
+            this.markList.splice(i,0,item);
+            하면 안 되나요
+            */
+
             isDoneInsert = true;
             break;
         }
@@ -386,7 +391,10 @@ WikiParser.prototype.TextNodeParse = function(node){
 	return node;
 };
 WikiParser.prototype.Parse = function(text){
+//여기로 위키텍스트 들어간다
+
     for(i in this.hookers){
+        //후커 돌면서 DoMark 실행
 		var hooker = this.hookers[i];
 		hooker.DoMark(this,text);
 	}
@@ -427,6 +435,7 @@ WikiParser.prototype.Parse = function(text){
 
 	return this.TextNodeParse(stack[0]);
 };
+//////////////////////////////
 function NowikiHooker(){
     this.NAME = "NOWIKI HOOKER";
 	this.NODE = NowikiNode;
@@ -434,6 +443,7 @@ function NowikiHooker(){
 NowikiHooker.prototype.DoMark = function(wikiparser,text){
     wikiparser.DoBasicMarkTag("nowiki");
 };
+//////////////////////////////
 function TemplateHooker(){
 	this.NAME = "TAMPLATE HOOKER";
 	this.NODE = TemplateNode;
@@ -446,7 +456,6 @@ TemplateHooker.prototype.GetEndStrLen = function(text)
 {
 	return 2;
 };
-
 TemplateHooker.prototype.DoMark = function(wikiparser, text){
 	var idx = 0;
 	while((idx = text.indexOf("{{", idx)) != -1){
@@ -459,7 +468,7 @@ TemplateHooker.prototype.DoMark = function(wikiparser, text){
         wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
     }
 };
-
+//////////////////////////////
 function TableHooker(){
 	this.NAME = "TABLE HOOKER";
 	this.NODE = TableNode;
@@ -484,6 +493,7 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
         wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
     }
 };
+///////////////////////////////
 function BoldTagHooker(){
 	this.NAME = "BOLDTAG HOOKER";
 	this.NODE = BoldNode;
@@ -505,6 +515,7 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 		idx += 3;
     }
 }
+//////////////////////////////
 function BrTagHooker(){
     this.NAME = "BRTAG HOOKER";
     this.NODE = BrNode;
@@ -526,6 +537,7 @@ BrTagHooker.prototype.DoMark = function(wikiparser,text){
 		idx += 3;
     }
 }
+//////////////////////////////
 function Parse(text){
 
     var wikiparser = new WikiParser();
