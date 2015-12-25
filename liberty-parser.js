@@ -499,10 +499,11 @@ function Parse(text){
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
-	window.document.getElementById("preview").innerHTML = res;
+    window.document.getElementById("preview").innerHTML = res;
     /*
     console.log(res);
     return res;
     */
+    //for node connect
 }
 //module.exports.Parse = Parse;
