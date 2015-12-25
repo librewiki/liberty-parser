@@ -58,7 +58,7 @@ function BRNode(){
 	this.type = "BR";
 }
 BRNode.prototype.Render = function(wikiparser){
-	return "<BR/>";
+	return "<br />";
 };
 BRNode.prototype.Process = function(){
 
@@ -280,14 +280,12 @@ TemplateNode.prototype.Process = function(){
 TemplateNode.prototype.Render = function(wikiparser){
 	return "[템플릿 있던 자리]";
 };
-function LibertyMark()
-{
+function LibertyMark(){
 	this.children = [];
 }
 LibertyMark.prototype.Render = function(wikiparser){
 	res = [];
-	for(i in this.children)
-	{
+	for(i in this.children){
 		var iter = this.children[i];
 		res.push(iter.Render(wikiparser));
 	}
@@ -295,8 +293,7 @@ LibertyMark.prototype.Render = function(wikiparser){
 };
 LibertyMark.prototype.Process = function(){
 	res = [];
-	for(i in this.children)
-	{
+	for(i in this.children){
 		var iter = this.children[i];
 		iter.Process();
 	}
@@ -488,6 +485,14 @@ DelLineHooker.prototype.DoMark = function(wikiparser,text){
     }
 };
 //////////////////////////////
+function AfterRender(rendered){
+    var rules = [[/<script>/gi,'&ltscript&gt'],[/<\/script>/gi,'&lt/script&gt'],[/<style>/gi,'&ltstyle&gt'],[/<\/style>/gi,'&lt/style&gt']];
+    for(i in rules){
+        rendered = rendered.replace(rules[i][0], rules[i][1]);
+    }
+    return rendered;
+}
+//////////////////////////////
 function Parse(text){
     var wikiparser = new WikiParser();
     wikiparser.AddHooker(new NowikiHooker());
@@ -500,10 +505,8 @@ function Parse(text){
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
     window.document.getElementById("preview").innerHTML = res;
-    /*
-    console.log(res);
-    return res;
-    */
+    //console.log(res);
+    //return res;
     //for node connect
 }
 //module.exports.Parse = Parse;
