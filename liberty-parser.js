@@ -29,16 +29,14 @@ pos를 기준으로 정렬시킵니다.
 결과값을 돌려 주는 거죠
 */
 
-function NowikiNode(text)
-{
+function NowikiNode(text){
     this.type = "NOWIKI";
     this.text = text;
 }
 NowikiNode.prototype.Render = function(){
   return this.text.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");
 };
-function TextNode(text)
-{
+function TextNode(text){
     this.type = "TEXT";
     this.text = text;
 }
@@ -99,61 +97,47 @@ TextNode.prototype.Process = function(wikiparser){
     return stack[0].children;
 	*/
 };
-TextNode.prototype.Render = function(wikiparser)
-{
+TextNode.prototype.Render = function(wikiparser){
 	return this.text;
 };
-function HeadingNode()
-{
+function HeadingNode(){
 
 }
-function ArticleNode()
-{
+function ArticleNode(){
 
 }
-function LinkNode()
-{
+function LinkNode(){
 
 }
-function RefNode()
-{
+function RefNode(){
 
 }
-function ReferenceNode()
-{
+function ReferenceNode(){
 
 }
-function BoldNode()
-{
+function BoldNode(){
 	this.type = "BOLD";
 	this.children = [];
 }
-function BrNode()
-{
+function BrNode(){
 
 }
-BoldNode.prototype.Render = function(wikiparser)
-{
+BoldNode.prototype.Render = function(wikiparser){
 	var res = [];
-	if(this.children[0].type == "TEXT")
-	{
-		if(this.children[0].text.startsWith("'''"))
-		{
+	if(this.children[0].type == "TEXT"){
+		if(this.children[0].text.startsWith("'''")){
 			this.children[0].text = this.children[0].text.substr(3);
 		}
 	}
-	if(this.children[this.children.length - 1].type == "TEXT")
-	{
+	if(this.children[this.children.length - 1].type == "TEXT"){
 		var t = this.children[this.children.length - 1].text;
-		if(t.endsWith("'''"))
-		{
+		if(t.endsWith("'''")){
 			t = t.substring(0, t.length -3);
 			this.children[this.children.length - 1].text = t;
 		}
 	}
 	res.push("<b>");
-	for(i in this.children)
-	{
+	for(i in this.children){
 
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
@@ -161,12 +145,10 @@ BoldNode.prototype.Render = function(wikiparser)
 	res.push("</b>");
 	return res.join("");
 };
-BoldNode.prototype.Process = function(wikiparser)
-{
+BoldNode.prototype.Process = function(wikiparser){
 
 };
-function TableNode()
-{
+function TableNode(){
 	this.NAME = "TABLE";
     this.children = [];
 	this.cells = [];
@@ -180,39 +162,31 @@ TableNode.prototype.Process = function(){
 	var isStartCell = 0;
 	var posPreBar = -1;
 	var j = -1;
-	if(this.children[0] != null)
-	{
-		if(this.children[0].type == "TEXT")
-		{
+	if(this.children[0] != null){
+		if(this.children[0].type == "TEXT"){
 			var temp = this.children[0].text;
 			temp = temp.substring(2,temp.length);
 			var i = temp.indexOf("\n");
-			if(i != -1)
-			{
+			if(i != -1){
 				this.tableattr = temp.substring(0,i);
 				this.children[0].text = temp.substring(i,temp.length);
 			}
 		}
-		if(this.children[this.children.length - 1].type == "TEXT")
-		{
+		if(this.children[this.children.length - 1].type == "TEXT"){
 			var temp = this.children[this.children.length - 1].text;
 			this.children[this.children.length - 1].text = temp.substring(0,temp.length - 2);
 		}
 	}
 	var item = null;
-	for(i in this.children)
-	{
+	for(i in this.children){
 		var iter = this.children[i];
-		if(iter.type == "TEXT")
-		{
+		if(iter.type == "TEXT"){
 			posPreBar = -1;
 			var temp = iter.text;
 //테이블의 셀을 구한다.
 //셀 파싱 규칙은 '|속성|셀 내용\n'이 기본이며, '|셀 내용\n'이나 '||셀 내용'은 변칙일 뿐이다
-			for(j = 0 ; j < temp.length ; j++)
-			{
-				if(temp.substr(j,2) == "|-")
-				{
+			for(j = 0 ; j < temp.length ; j++){
+				if(temp.substr(j,2) == "|-"){
 					res.push([]);
 					row++;
 
@@ -220,10 +194,8 @@ TableNode.prototype.Process = function(){
 					posPreBar = -1;
 
 				}
-				else if(temp[j] == "|")
-				{
-					switch(isStartCell)
-					{
+				else if(temp[j] == "|"){
+					switch(isStartCell){
 						case 0:{
 							posPreBar = j;
 							isStartCell = 1;
@@ -249,10 +221,8 @@ TableNode.prototype.Process = function(){
 						break;
 					}
 				}
-				else if(temp[j] == '\n' )
-				{
-					if(isStartCell != 0)
-					{
+				else if(temp[j] == '\n' ){
+					if(isStartCell != 0){
 						var t = temp.substring(posPreBar+1,j);
 						var newTextNode = new TextNode(t);
 						item.children.push(newTextNode);
@@ -263,46 +233,39 @@ TableNode.prototype.Process = function(){
 					}
 				}
 			}
-			if(isStartCell != 0)
-			{
+			if(isStartCell != 0){
 				var t = temp.substring(posPreBar+1,temp.length);
 				var newTextNode = new TextNode(t);
 				item.children.push(newTextNode);
 				children.push(newTextNode);
 			}
 		}
-		else
-		{
+		else{
 			item.children.push(iter);
 			children.push(iter);
 		}
 	}
-	for(i in res)
-	{
+	for(i in res){
 		if(res[i].length != 0){
 			this.cells.push(res[i]);
 		}
 	}
 	this.children = children;
 };
-TableNode.prototype.Render = function(wikiparser)
-{
+TableNode.prototype.Render = function(wikiparser){
 	var res = [];
 	res.push("<table ");
 	res.push(this.tableattr);
 	res.push(">");
-	for(i in this.cells)
-	{
+	for(i in this.cells){
 		var row = this.cells[i];
 		res.push("<tr>");
-		for(j in row)
-		{
+		for(j in row){
 			var cell = row[j];
 			res.push("<td ");
 			res.push(cell.attr);
 			res.push(">");
-			for(k in cell.children)
-			{
+			for(k in cell.children){
 				var iter = cell.children[k];
 				res.push(iter.Render(wikiparser));
 			}
@@ -313,29 +276,23 @@ TableNode.prototype.Render = function(wikiparser)
 	res.push("</table>");
 	return res.join("");
 };
-function TemplateNode(hooker)
-{
+function TemplateNode(hooker){
 	this.NAME = "TEMPLATE";
     this.children = [];
 	this.hooker = hooker;
 }
-TemplateNode.prototype.Process = function()
-{
+TemplateNode.prototype.Process = function(){
 
 };
-TemplateNode.prototype.Render = function(wikiparser)
-{
+TemplateNode.prototype.Render = function(wikiparser){
 	return "[템플릿 있던 자리]";
 };
-function LibertyMark()
-{
+function LibertyMark(){
 	this.children = [];
 }
-LibertyMark.prototype.Render = function(wikiparser)
-{
+LibertyMark.prototype.Render = function(wikiparser){
 	res = [];
-	for(i in this.children)
-	{
+	for(i in this.children){
 		var iter = this.children[i];
 		res.push(iter.Render(wikiparser));
 	}
@@ -365,16 +322,8 @@ WikiParser.prototype.AddMark = function(marker,position){
     var item = {marker:marker,position:position};
     for(i in this.markList){
         var iter = this.markList[i];
-        if(iter.position > position)
-        {
-            var a = this.markList.splice(i);
-			this.markList.push(item);
-			for(i in a)this.markList.push(a[i]);
-            /* 이거 그냥
+        if(iter.position > position){
             this.markList.splice(i,0,item);
-            하면 안 되나요
-            */
-
             isDoneInsert = true;
             break;
         }
@@ -403,8 +352,7 @@ WikiParser.prototype.Parse = function(text){
 	stack.push(new LibertyMark());
 	for(i in this.markList){
 		var iter = this.markList[i];
-		switch(iter.marker.markType)
-		{
+		switch(iter.marker.markType){
 			case MARK_TYPE.CLOSE_TAG:{
 				if(stack.length == 1){
 					throw "parsing error! 문법이 틀렸다!";
@@ -427,8 +375,7 @@ WikiParser.prototype.Parse = function(text){
 		}
 		lastIdx = iter.position;
 	}
-    if(lastIdx <= text.length -1)
-    {
+    if(lastIdx <= text.length -1){
         stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, text.length)));
     }
 
@@ -448,12 +395,10 @@ function TemplateHooker(){
 	this.NAME = "TAMPLATE HOOKER";
 	this.NODE = TemplateNode;
 }
-TemplateHooker.prototype.GetStartStrLen = function(text)
-{
+TemplateHooker.prototype.GetStartStrLen = function(text){
 	return 2;
 };
-TemplateHooker.prototype.GetEndStrLen = function(text)
-{
+TemplateHooker.prototype.GetEndStrLen = function(text){
 	return 2;
 };
 TemplateHooker.prototype.DoMark = function(wikiparser, text){
@@ -473,12 +418,10 @@ function TableHooker(){
 	this.NAME = "TABLE HOOKER";
 	this.NODE = TableNode;
 }
-TableHooker.prototype.GetStartStrLen = function(text)
-{
+TableHooker.prototype.GetStartStrLen = function(text){
 	return 2;
 };
-TableHooker.prototype.GetEndStrLen = function(text)
-{
+TableHooker.prototype.GetEndStrLen = function(text){
 	return 2;
 };
 TableHooker.prototype.DoMark = function(wikiparser, text){
@@ -503,12 +446,10 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 	var isStartTag = false;
 	while((idx = text.indexOf("'''", idx)) != -1){
 		var tagType = MARK_TYPE.OPEN_TAG;
-		if(!isStartTag)
-		{
+		if(!isStartTag){
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
 		}
-		else
-		{
+		else{
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
 		}
 		isStartTag = !isStartTag;
@@ -525,12 +466,10 @@ BrTagHooker.prototype.DoMark = function(wikiparser,text){
 	var isStartTag = false;
 	while((idx = text.indexOf("'''", idx)) != -1){
 		var tagType = MARK_TYPE.OPEN_TAG;
-		if(!isStartTag)
-		{
+		if(!isStartTag){
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
 		}
-		else
-		{
+		else{
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
 		}
 		isStartTag = !isStartTag;
