@@ -40,6 +40,7 @@ NowikiNode.prototype.Process = function(){
 NowikiNode.prototype.Render = function(wikiparser){
   return this.text.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");
 };
+//////////////////////////////
 function TextNode(text){
     this.type = "TEXT";
     this.text = text;
@@ -50,29 +51,68 @@ TextNode.prototype.Process = function(wikiparser){
 TextNode.prototype.Render = function(wikiparser){
 	return this.text;
 };
+//////////////////////////////
 function HeadingNode(){
 
 }
+//////////////////////////////
 function BRNode(){
-    this.children = []
 	this.type = "BR";
+    this.children = [];
 }
+BRNode.prototype.Process = function(){
+
+};
 BRNode.prototype.Render = function(wikiparser){
 	return "<br />";
 };
-BRNode.prototype.Process = function(){
-
-}
+//////////////////////////////
 function LinkNode(){
+    this.type = "LINK";
+    this.children = [];
+}
+LinkNode.prototype.Process = function(){
+
+};
+LinkNode.prototype.Render = function (wikiparser) {
+    var res = [];
+    res.push('<a href="');
+    if(this.children[0].type == "TEXT"){
+		if(this.children[0].text.startsWith("[[")){
+			this.children[0].text = this.children[0].text.substr(2);
+		}
+	}
+	if(this.children[this.children.length - 1].type == "TEXT"){
+		var t = this.children[this.children.length - 1].text;
+		if(t.endsWith("]]")){
+			t = t.substring(0, t.length -2);
+			this.children[this.children.length - 1].text = t;
+		}
+	}
+    for(i in this.children){
+
+    	var it = this.children[i];
+    	res.push(it.Render(wikiparser));
+    }
+    res.push('">');
+    for(i in this.children){
+
+        var it = this.children[i];
+        res.push(it.Render(wikiparser));
+    }
+    res.push('</a>');
+    return res.join("");
+};
+//링크를 하긴 했는데 다른링크 처리는 안 함 해야되는데 자러가야지 그리고 뭔가 비효율적인듯
+//////////////////////////////
+function RefNode(){
 
 }
-function RefNode()
-{
-
-}
+//////////////////////////////
 function ReferenceNode(){
 
 }
+//////////////////////////////
 function BoldNode(){
 	this.type = "BOLD";
 	this.children = [];
@@ -107,6 +147,7 @@ BoldNode.prototype.Process = function(){
 		it.Process();
 	}
 };
+//////////////////////////////
 function DelTagNode(){
 	this.type = "DEL";
 	this.children = [];
@@ -141,6 +182,7 @@ DelTagNode.prototype.Render = function(wikiparser){
 	res.push("</s>");
 	return res.join("");
 };
+//////////////////////////////
 function TableNode(){
 	this.NAME = "TABLE";
     this.children = [];
@@ -269,6 +311,7 @@ TableNode.prototype.Render = function(wikiparser){
 	res.push("</table>");
 	return res.join("");
 };
+//////////////////////////////
 function TemplateNode(hooker){
 	this.NAME = "TEMPLATE";
     this.children = [];
@@ -280,6 +323,7 @@ TemplateNode.prototype.Process = function(){
 TemplateNode.prototype.Render = function(wikiparser){
 	return "[템플릿 있던 자리]";
 };
+//////////////////////////////
 function LibertyMark(){
 	this.children = [];
 }
@@ -465,6 +509,23 @@ BRTagHooker.prototype.DoMark = function(wikiparser,text){
     }
 };
 //////////////////////////////
+function LinkHooker(){
+    this.NAME = "LINK HOOKER";
+    this.NODE = LinkNode;
+}
+LinkHooker.prototype.DoMark = function(wikiparser,text){
+    var idx = 0;
+	while((idx = text.indexOf("[[", idx)) != -1){
+        wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+		idx += 2;
+    }
+    idx = 0;
+    while((idx = text.indexOf("]]", idx)) != -1){
+		idx += 2;
+        wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
+    }
+};
+//////////////////////////////
 function DelLineHooker(){
 	this.NAME = "DELTAG HOOKER";
 	this.NODE = DelTagNode;
@@ -486,6 +547,7 @@ DelLineHooker.prototype.DoMark = function(wikiparser,text){
 };
 //////////////////////////////
 function AfterRender(rendered){
+    //렌더링 이후에 다 못한 처리를 한다
     var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
     for(i in rules){
         rendered = rendered.replace(rules[i][0], rules[i][1]);
@@ -501,6 +563,7 @@ function Parse(text){
 	wikiparser.AddHooker(new BoldTagHooker());
 	wikiparser.AddHooker(new BRTagHooker());
 	wikiparser.AddHooker(new DelLineHooker());
+    wikiparser.AddHooker(new LinkHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
