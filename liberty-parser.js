@@ -486,7 +486,7 @@ DelLineHooker.prototype.DoMark = function(wikiparser,text){
 };
 //////////////////////////////
 function AfterRender(rendered){
-    var rules = [[/<script>/gi,'&ltscript&gt'],[/<\/script>/gi,'&lt/script&gt'],[/<style>/gi,'&ltstyle&gt'],[/<\/style>/gi,'&lt/style&gt']];
+    var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
     for(i in rules){
         rendered = rendered.replace(rules[i][0], rules[i][1]);
     }
@@ -505,9 +505,9 @@ function Parse(text){
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
     res = AfterRender(rendered);
-    window.document.getElementById("preview").innerHTML = res;
-    //console.log(res);
-    //return res;
+    //window.document.getElementById("preview").innerHTML = res;
+    console.log(res);
+    return res;
     //for node connect
 }
-//module.exports.Parse = Parse;
+module.exports.Parse = Parse;
