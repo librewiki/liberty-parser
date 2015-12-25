@@ -341,7 +341,6 @@ WikiParser.prototype.TextNodeParse = function(node){
 };
 WikiParser.prototype.Parse = function(text){
 //여기로 위키텍스트 들어간다
-
     for(i in this.hookers){
         //후커 돌면서 DoMark 실행
 		var hooker = this.hookers[i];
@@ -349,21 +348,24 @@ WikiParser.prototype.Parse = function(text){
 	}
 	var stack = [];
 	var lastIdx = 0;
-	stack.push(new LibertyMark());
+	stack.push(new LibertyMark());//마크 담는 스택
 	for(i in this.markList){
+        //앞쪽 마크부터 돈다
 		var iter = this.markList[i];
 		switch(iter.marker.markType){
 			case MARK_TYPE.CLOSE_TAG:{
 				if(stack.length == 1){
-					throw "parsing error! 문법이 틀렸다!";
+					throw "parsing error! 짝 없는 닫는 태그";
 				}
 				var lastNode = stack[stack.length - 1];
 				stack.pop();
+                console.log("ctaglastidx:"+lastIdx+"sub"+text.substring(lastIdx, iter.position));
 				lastNode.children.push(new TextNode(text.substring(lastIdx, iter.position)));
 				lastNode.Process(lastNode);
 			}
 			break;
 			case MARK_TYPE.OPEN_TAG:
+                console.log("otaglastidx:"+lastIdx+"sub"+text.substring(lastIdx, iter.position));
 				stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
 				var node = new iter.marker.hooker.NODE();
 				stack[stack.length - 1].children.push(node);
