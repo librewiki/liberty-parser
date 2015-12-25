@@ -503,7 +503,8 @@ function Parse(text){
 	wikiparser.AddHooker(new DelLineHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
-    res = a.Render(wikiparser);
+    rendered = a.Render(wikiparser);
+    res = AfterRender(rendered);
     window.document.getElementById("preview").innerHTML = res;
     //console.log(res);
     //return res;
