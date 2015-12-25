@@ -1,15 +1,21 @@
 "USE STRICT"
-//EDITING BY DAMEZUMA
+//*EDITING BY DAMEZUMA
+//*author DAMEZUMA
+//publish by MIT
 //각 클래스 메소드 별 역할
 //Render() -> 노드를 HTML로 변환한다.
 //Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다. 
 //테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
 
-function NowikiNode(text){
+function NowikiNode(){
     this.type = "NOWIKI";
-    this.text = text;
+    this.children = [];
 }
-NowikiNode.prototype.Render = function(){
+NowikiNode.prototype.Process = function(){
+	var stack = [];
+	
+};
+NowikiNode.prototype.Render = function(wikiparser){
   return this.text.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");  
 };
 function TextNode(text){
@@ -25,8 +31,15 @@ TextNode.prototype.Render = function(wikiparser){
 function HeadingNode(){
     
 }
-function ArticleNode(){
-    
+function BRNode(){
+    this.children = []
+	this.type = "BR";
+}
+BRNode.prototype.Render = function(wikiparser){
+	return "<BR/>";
+};
+BRNode.prototype.Process = function(){
+	
 }
 function LinkNode(){
     
@@ -66,8 +79,46 @@ BoldNode.prototype.Render = function(wikiparser){
 	res.push("</b>");
 	return res.join("");
 };
-BoldNode.prototype.Process = function(wikiparser){
+BoldNode.prototype.Process = function(){
+	for(i in this.children){
+		
+		var it = this.children[i];
+		it.Process();
+	}
+};
+function DelTagNode(){
+	this.type = "DEL";
+	this.children = [];
+}
+DelTagNode.prototype.Process = function(){
 	
+	for(i in this.children){
+		var it = this.children[i];
+		it.Process();
+	}
+};
+DelTagNode.prototype.Render = function(wikiparser){
+	var res = [];
+	if(this.children[0].type == "TEXT"){
+		if(this.children[0].text.startsWith("--")){
+			this.children[0].text = this.children[0].text.substr(2);
+		}
+	}
+	if(this.children[this.children.length - 1].type == "TEXT"){
+		var t = this.children[this.children.length - 1].text;
+		if(t.endsWith("--")){
+			t = t.substring(0, t.length -2);
+			this.children[this.children.length - 1].text = t;
+		}
+	}
+	res.push("<s>");
+	for(i in this.children){
+		
+		var it = this.children[i];
+		res.push(it.Render(wikiparser));
+	}
+	res.push("</s>");
+	return res.join("");
 };
 function TableNode(){
 	this.NAME = "TABLE";
@@ -76,7 +127,6 @@ function TableNode(){
 	this.tableattr = "";
 }
 TableNode.prototype.Process = function(){
-	var aCountOfCellsInRow = 0;
 	var res = [[]];
 	var row = 0;
 	var children = [];
@@ -101,6 +151,8 @@ TableNode.prototype.Process = function(){
 	var item = null;
 	for(i in this.children){
 		var iter = this.children[i];
+		iter.Process();
+		
 		if(iter.type == "TEXT"){
 			posPreBar = -1;
 			var temp = iter.text;
@@ -160,6 +212,7 @@ TableNode.prototype.Process = function(){
 		}
 		else{
 			item.children.push(iter);
+			
 			children.push(iter);
 		}
 	}
@@ -218,6 +271,14 @@ LibertyMark.prototype.Render = function(wikiparser){
 		res.push(iter.Render(wikiparser));
 	}
 	return res.join("");
+};
+LibertyMark.prototype.Process = function(){
+	res = [];
+	for(i in this.children)
+	{
+		var iter = this.children[i];
+		iter.Process();
+	}
 };
 var MARK_TYPE = {
     STANDALONE:"STANDALONE",
@@ -366,28 +427,46 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 		idx += 3;
     }
 }
+function BRTagHooker(){
+	this.NAME = "BRTAG HOOKER";
+	this.NODE = BRNode;
+}
 BRTagHooker.prototype.DoMark = function(wikiparser,text){
 	var idx = 0;
+	while((idx = text.indexOf("\n\n", idx)) != -1){
+		var tagType = MARK_TYPE.OPEN_TAG;
+		wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+		wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx+1);
+		idx += 2;
+    }
+}
+function DelLineHooker(){
+	this.NAME = "DELTAG HOOKER";
+	this.NODE = DelTagNode;
+}
+DelLineHooker.prototype.DoMark = function(wikiparser,text){
+	var idx = 0;
 	var isStartTag = false;
-	while((idx = text.indexOf("'''", idx)) != -1){
+	while((idx = text.indexOf("--", idx)) != -1){
 		var tagType = MARK_TYPE.OPEN_TAG;
 		if(!isStartTag){
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
 		}
 		else{
-			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 2);
 		}
 		isStartTag = !isStartTag;
-		idx += 3;
+		idx += 2;
     }
 }
 function Parse(text){
-    
     var wikiparser = new WikiParser();
     wikiparser.AddHooker(new NowikiHooker());
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
 	wikiparser.AddHooker(new BoldTagHooker());
+	wikiparser.AddHooker(new BRTagHooker());
+	wikiparser.AddHooker(new DelLineHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     res = a.Render(wikiparser);
