@@ -6,10 +6,6 @@
 //Render() -> 노드를 HTML로 변환한다.
 //Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다.
 //테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 /*
 파서 객체의 파서를 호출하면
 ​AddHooker라는 함수를 통해서
@@ -33,21 +29,12 @@ pos를 기준으로 정렬시킵니다.
 차일드를 돌면서 렌더함수를 호출하고...
 결과값을 돌려 주는 거죠
 */
-<<<<<<< HEAD
-=======
-=======
-
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 function NowikiNode(){
     this.type = "NOWIKI";
     this.children = [];
 }
 NowikiNode.prototype.Process = function(){
 	var stack = [];
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 };
 NowikiNode.prototype.Render = function(wikiparser){
     res = wikiparser.OnlyText(this);
@@ -55,20 +42,6 @@ NowikiNode.prototype.Render = function(wikiparser){
     .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
 };
 //////////////////////////////
-=======
-	
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
-};
-NowikiNode.prototype.Render = function(wikiparser){
-    res = wikiparser.OnlyText(this);
-    return res.replace(/</gi,"&lt;").replace(/>/gi,"&gt;")
-    .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
-};
-<<<<<<< HEAD
-//////////////////////////////
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 function TextNode(text){
     this.type = "TEXT";
     this.text = text;
@@ -79,10 +52,6 @@ TextNode.prototype.Process = function(wikiparser){
 TextNode.prototype.Render = function(wikiparser){
 	return this.text;
 };
-<<<<<<< HEAD
-//////////////////////////////
-=======
-<<<<<<< HEAD
 //////////////////////////////
 function BRNode(){
 	this.type = "BR";
@@ -137,132 +106,10 @@ LinkNode.prototype.Render = function(wikiparser){
 //////////////////////////////
 function RefNode(){
 
-=======
-function HeadingNode(){
-    
-}
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
-function BRNode(){
-	this.type = "BR";
-    this.children = [];
-}
-BRNode.prototype.Process = function(){
-
-};
-BRNode.prototype.Render = function(wikiparser){
-	return "<br />";
-};
-//////////////////////////////
-/*
-*[[LINK]],[[LINK|TEXT]]
-*/
-function LinkNode(){
-<<<<<<< HEAD
-    this.type = "LINK";
-    this.children = [];
-}
-LinkNode.prototype.Process = function(){
-
-};
-LinkNode.prototype.Render = function(wikiparser){
-    var res = [];
-    res.push('<a href="');
-    if(this.children[0].type == "TEXT"){
-		if(this.children[0].text.startsWith("[[")){
-			this.children[0].text = this.children[0].text.substr(2);
-		}
-	}
-	if(this.children[this.children.length - 1].type == "TEXT"){
-		var t = this.children[this.children.length - 1].text;
-		if(t.endsWith("]]")){
-			t = t.substring(0, t.length -2);
-			this.children[this.children.length - 1].text = t;
-		}
-	}
-    var innerText = wikiparser.OnlyText(this).split("|");
-    var linkText = innerText[0];
-    if(innerText[1]==null){
-        showText = linkText;
-    }
-    else{
-        showText = innerText[1];
-    }
-    res.push(linkText);
-    res.push('">');
-    res.push(showText);
-    res.push('</a>');
-    return res.join("");
-};
-//////////////////////////////
-function RefNode(){
-
-}
-//////////////////////////////
-=======
-    
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
 }
 //////////////////////////////
 function ReferenceNode(){
 
-}
-<<<<<<< HEAD
-//////////////////////////////
-function HeadingNode(){
-    this.type = "HEADING";
-    this.children = [];
-}
-HeadingNode.prototype.Process = function(wikiparser){
-    // body...
-};
-HeadingNode.prototype.Render = function(wikiparser){
-    //레벨 2->4로 건너뛰면 버그 발생(MW도 비권장)
-    var res = [];
-    var curLv = wikiparser.headingQue[wikiparser.headingQueCurr];
-    var lastLv = wikiparser.headingQue[wikiparser.headingQueCurr-1];
-    if(this.children[0].type == "TEXT"){
-		if(this.children[0].text.startsWith("=")){
-			this.children[0].text = this.children[0].text.substr(curLv);
-		}
-	}
-	if(this.children[this.children.length - 1].type == "TEXT"){
-		var t = this.children[this.children.length - 1].text;
-		if(t.endsWith("=")){
-			t = t.substring(0, t.length -curLv);
-			this.children[this.children.length - 1].text = t;
-		}
-	}
-    if(curLv < wikiparser.headingMin) wikiparser.headingMin = curLv;
-    var min = wikiparser.headingMin;
-    if(wikiparser.headingQueCurr==0){
-        wikiparser.headingNumbering[0] = 1;
-    }
-    if(wikiparser.headingQueCurr!=0){
-    wikiparser.headingNumbering[curLv-min]++;
-        if(curLv<lastLv){
-            for(var n = curLv-min+1;n<6;n++)
-            wikiparser.headingNumbering[n] = 0;
-        }
-    }
-    wikiparser.headingQueCurr++;
-    res.push("<h"+curLv+'><a href="#toc">');
-    res.push(wikiparser.headingNumbering.join(".").replace(/.0/gi,""));
-    res.push(".</a> ");
-    var res2 = [];
-    for(i in this.children){
-        var it = this.children[i];
-        res2.push(it.Render(wikiparser));
-    }
-    res.push(res2.join("").trim());
-    res.push("</h"+curLv+">");
-    return res.join("");
-};
-//////////////////////////////
-=======
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
-function ReferenceNode(){
-
-<<<<<<< HEAD
 }
 //////////////////////////////
 function HeadingNode(){
@@ -315,17 +162,10 @@ HeadingNode.prototype.Render = function(wikiparser){
     return res.join("");
 };
 //////////////////////////////
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 function BoldNode(){
 	this.type = "BOLD";
 	this.children = [];
 }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 BoldNode.prototype.Process = function(){
 	for(i in this.children){
 
@@ -333,11 +173,6 @@ BoldNode.prototype.Process = function(){
 		it.Process();
 	}
 };
-<<<<<<< HEAD
-=======
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 BoldNode.prototype.Render = function(wikiparser){
 	var res = [];
 	if(this.children[0].type == "TEXT"){
@@ -354,38 +189,19 @@ BoldNode.prototype.Render = function(wikiparser){
 	}
 	res.push("<b>");
 	for(i in this.children){
-<<<<<<< HEAD
 
-=======
-<<<<<<< HEAD
-
-=======
-		
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
 	res.push("</b>");
 	return res.join("");
 };
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 //////////////////////////////
 function ItalicNode(){
 	this.type = "ITALIC";
 	this.children = [];
 }
 ItalicNode.prototype.Process = function(){
-<<<<<<< HEAD
-=======
-	for(i in this.children){
-
-=======
-BoldNode.prototype.Process = function(){
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 	for(i in this.children){
 
 		var it = this.children[i];
@@ -423,49 +239,10 @@ function DelTagNode(){
 DelTagNode.prototype.Process = function(){
 
 	for(i in this.children){
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
 		var it = this.children[i];
 		it.Process();
 	}
 };
-<<<<<<< HEAD
-ItalicNode.prototype.Render = function(wikiparser){
-	var res = [];
-	if(this.children[0].type == "TEXT"){
-		if(this.children[0].text.startsWith("''")){
-			this.children[0].text = this.children[0].text.substr(2);
-		}
-	}
-	if(this.children[this.children.length - 1].type == "TEXT"){
-		var t = this.children[this.children.length - 1].text;
-		if(t.endsWith("'")){
-			t = t.substring(0, t.length -2);
-			this.children[this.children.length - 1].text = t;
-		}
-	}
-	res.push("<i>");
-	for(i in this.children){
-
-		var it = this.children[i];
-		res.push(it.Render(wikiparser));
-	}
-	res.push("</i>");
-	return res.join("");
-};
-//////////////////////////////
-function DelTagNode(){
-	this.type = "DEL";
-	this.children = [];
-}
-DelTagNode.prototype.Process = function(){
-
-	for(i in this.children){
-		var it = this.children[i];
-		it.Process();
-	}
-};
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
 DelTagNode.prototype.Render = function(wikiparser){
 	var res = [];
 	if(this.children[0].type == "TEXT"){
@@ -482,29 +259,14 @@ DelTagNode.prototype.Render = function(wikiparser){
 	}
 	res.push("<s>");
 	for(i in this.children){
-<<<<<<< HEAD
 
-=======
-<<<<<<< HEAD
-
-=======
-		
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
 	res.push("</s>");
 	return res.join("");
 };
-<<<<<<< HEAD
 //////////////////////////////
-=======
-<<<<<<< HEAD
-//////////////////////////////
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 function TableNode(){
 	this.NAME = "TABLE";
     this.children = [];
@@ -537,15 +299,7 @@ TableNode.prototype.Process = function(){
 	for(i in this.children){
 		var iter = this.children[i];
 		iter.Process();
-<<<<<<< HEAD
 
-=======
-<<<<<<< HEAD
-
-=======
-		
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 		if(iter.type == "TEXT"){
 			posPreBar = -1;
 			var temp = iter.text;
@@ -605,15 +359,7 @@ TableNode.prototype.Process = function(){
 		}
 		else{
 			item.children.push(iter);
-<<<<<<< HEAD
 
-=======
-<<<<<<< HEAD
-
-=======
-			
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 			children.push(iter);
 		}
 	}
@@ -649,57 +395,25 @@ TableNode.prototype.Render = function(wikiparser){
 	res.push("</table>");
 	return res.join("");
 };
-<<<<<<< HEAD
 //////////////////////////////
-=======
-<<<<<<< HEAD
-//////////////////////////////
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 function TemplateNode(hooker){
 	this.NAME = "TEMPLATE";
     this.children = [];
 	this.hooker = hooker;
 }
 TemplateNode.prototype.Process = function(){
-<<<<<<< HEAD
 
 };
 TemplateNode.prototype.Render = function(wikiparser){
 	return "[템플릿 있던 자리]";
-=======
-<<<<<<< HEAD
-
-};
-TemplateNode.prototype.Render = function(wikiparser){
-	return "[템플릿 있던 자리]";
-=======
-	
-};
-TemplateNode.prototype.Render = function(wikiparser){
-	return "[템블릿 있던 자리]";
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 };
 //////////////////////////////
 function LibertyMark(){
 	this.children = [];
 }
 LibertyMark.prototype.Render = function(wikiparser){
-<<<<<<< HEAD
 	var res = [];
 	for(i in this.children){
-=======
-<<<<<<< HEAD
-	var res = [];
-	for(i in this.children){
-=======
-	res = [];
-	for(i in this.children)
-	{
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 		var iter = this.children[i];
 		res.push(iter.Render(wikiparser));
 	}
@@ -707,16 +421,7 @@ LibertyMark.prototype.Render = function(wikiparser){
 };
 LibertyMark.prototype.Process = function(){
 	res = [];
-<<<<<<< HEAD
 	for(i in this.children){
-=======
-<<<<<<< HEAD
-	for(i in this.children){
-=======
-	for(i in this.children)
-	{
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 		var iter = this.children[i];
 		iter.Process();
 	}
@@ -829,18 +534,8 @@ WikiParser.prototype.Parse = function(text){
 	}
     if(lastIdx <= text.length -1)
 		stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, text.length)));
-<<<<<<< HEAD
 
 
-=======
-<<<<<<< HEAD
-
-
-=======
-	
-	
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 	return this.TextNodeParse(stack[0]);
 };
 //////////////////////////////
@@ -918,11 +613,7 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 function ItalicHooker(){
 	this.NAME = "ITALIC HOOKER";
 	this.NODE = ItalicNode;
-<<<<<<< HEAD
 } 
-=======
-}
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 ItalicHooker.prototype.DoMark = function(wikiparser,text){
 	var idx = 0;
 	var isStartTag = false;
@@ -973,14 +664,6 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
         wikiparser.headingQue.push(level);
         wikiparser.headingQueFront++;
     }
-<<<<<<< HEAD
-=======
-}
-//////////////////////////////
-function BRTagHooker(){
-	this.NAME = "BRTAG HOOKER";
-	this.NODE = BRNode;
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 }
 //////////////////////////////
 function BRTagHooker(){
@@ -995,10 +678,6 @@ BRTagHooker.prototype.DoMark = function(wikiparser,text){
 		wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx+1);
 		idx += 2;
     }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 };
 //////////////////////////////
 function LinkHooker(){
@@ -1018,12 +697,6 @@ LinkHooker.prototype.DoMark = function(wikiparser,text){
     }
 };
 //////////////////////////////
-<<<<<<< HEAD
-=======
-=======
-}
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 function DelLineHooker(){
 	this.NAME = "DELTAG HOOKER";
 	this.NODE = DelTagNode;
@@ -1041,7 +714,6 @@ DelLineHooker.prototype.DoMark = function(wikiparser,text){
 		}
 		isStartTag = !isStartTag;
 		idx += 2;
-<<<<<<< HEAD
     }
 };
 //////////////////////////////
@@ -1050,11 +722,6 @@ function AfterRender(rendered){
     var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
     for(i in rules){
         rendered = rendered.replace(rules[i][0], rules[i][1]);
-<<<<<<< HEAD
-=======
-=======
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
     }
     return rendered;
 }
@@ -1065,24 +732,11 @@ function Parse(text){
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
 	wikiparser.AddHooker(new BoldTagHooker());
-<<<<<<< HEAD
     wikiparser.AddHooker(new ItalicHooker());
 	wikiparser.AddHooker(new BRTagHooker());
 	wikiparser.AddHooker(new DelLineHooker());
     wikiparser.AddHooker(new LinkHooker());
     wikiparser.AddHooker(new HeadingHooker());
-=======
-<<<<<<< HEAD
-    wikiparser.AddHooker(new ItalicHooker());
-	wikiparser.AddHooker(new BRTagHooker());
-	wikiparser.AddHooker(new DelLineHooker());
-    wikiparser.AddHooker(new LinkHooker());
-    wikiparser.AddHooker(new HeadingHooker());
-=======
-	wikiparser.AddHooker(new BRTagHooker());
-	wikiparser.AddHooker(new DelLineHooker());
->>>>>>> a345c9e85fc0a542da67a7d73d2110f0ca1dec46
->>>>>>> 657005049b76052c04d61900927fda8e23a26ecb
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
