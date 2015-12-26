@@ -67,24 +67,6 @@ BRNode.prototype.Render = function(wikiparser){
 	return "<br />";
 };
 //////////////////////////////
-function OnlyText(node,wikiparser){
-    //자손 노드중 텍스트 노드만 처리한다
-    //재귀가 더 깔끔하긴 한데..좀...
-    var res = [];
-    function recursion(current){
-        if(current.type=="TEXT"){
-            res.push(current.Render(wikiparser));
-        }
-        else{
-            for(var i in current.children){
-                recursion(current.children[i]);
-            }
-        }
-    }
-    recursion(node);
-    return res.join("");
-}
-
 /*
 *[[LINK]],[[LINK|TEXT]]
 */
@@ -110,10 +92,7 @@ LinkNode.prototype.Render = function(wikiparser){
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-    for(var x in this.children){
-        console.log(this.children[x]);
-    }
-    var innerText = OnlyText(this,wikiparser).split("|");
+    var innerText = wikiparser.OnlyText(this).split("|");
     var linkText = innerText[0];
     if(innerText[1]==null){
         showText = linkText;
@@ -406,6 +385,23 @@ WikiParser.prototype.TextNodeParse = function(node){
 
 	return node;
 };
+WikiParser.prototype.OnlyText = function(node){
+    //자손 노드중 텍스트 노드만 처리한다
+    //재귀가 더 깔끔하긴 한데..좀...
+    var res = [];
+    function recursion(current){
+        if(current.type=="TEXT"){
+            res.push(current.Render(this));
+        }
+        else{
+            for(var i in current.children){
+                recursion(current.children[i]);
+            }
+        }
+    }
+    recursion(node);
+    return res.join("");
+}
 WikiParser.prototype.Parse = function(text){
     //여기로 위키텍스트 들어간다
     for(i in this.hookers){
