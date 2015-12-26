@@ -67,6 +67,27 @@ BRNode.prototype.Render = function(wikiparser){
 	return "<br />";
 };
 //////////////////////////////
+function OnlyText(node,wikiparser){
+    //자손 노드중 텍스트 노드만 처리한다
+    //재귀가 더 깔끔하긴 한데..좀...
+    var res = [];
+    function recursion(current){
+        if(current.type=="TEXT"){
+            res.push(current.Render(wikiparser));
+        }
+        else{
+            for(var i in current.children){
+                recursion(current.children[i]);
+            }
+        }
+    }
+    recursion(node);
+    return res.join("");
+}
+
+/*
+*[[LINK]],[[LINK|TEXT]]
+*/
 function LinkNode(){
     this.type = "LINK";
     this.children = [];
@@ -74,7 +95,7 @@ function LinkNode(){
 LinkNode.prototype.Process = function(){
 
 };
-LinkNode.prototype.Render = function (wikiparser) {
+LinkNode.prototype.Render = function(wikiparser){
     var res = [];
     res.push('<a href="');
     if(this.children[0].type == "TEXT"){
@@ -89,17 +110,9 @@ LinkNode.prototype.Render = function (wikiparser) {
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-    for(i in this.children){
-
-    	var it = this.children[i];
-    	res.push(it.Render(wikiparser));
-    }
+    res.push(OnlyText(this,wikiparser));
     res.push('">');
-    for(i in this.children){
-
-        var it = this.children[i];
-        res.push(it.Render(wikiparser));
-    }
+    res.push(OnlyText(this,wikiparser));
     res.push('</a>');
     return res.join("");
 };
@@ -569,7 +582,6 @@ function Parse(text){
     rendered = a.Render(wikiparser);
     res = AfterRender(rendered);
     //window.document.getElementById("preview").innerHTML = res;
-    console.log(res);
     return res;
     //for node connect
 }
