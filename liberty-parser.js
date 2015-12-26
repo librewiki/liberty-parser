@@ -197,6 +197,41 @@ BoldNode.prototype.Render = function(wikiparser){
 	return res.join("");
 };
 //////////////////////////////
+function ItalicNode(){
+	this.type = "ITALIC";
+	this.children = [];
+}
+ItalicNode.prototype.Process = function(){
+	for(i in this.children){
+
+		var it = this.children[i];
+		it.Process();
+	}
+};
+ItalicNode.prototype.Render = function(wikiparser){
+	var res = [];
+	if(this.children[0].type == "TEXT"){
+		if(this.children[0].text.startsWith("''")){
+			this.children[0].text = this.children[0].text.substr(2);
+		}
+	}
+	if(this.children[this.children.length - 1].type == "TEXT"){
+		var t = this.children[this.children.length - 1].text;
+		if(t.endsWith("'")){
+			t = t.substring(0, t.length -2);
+			this.children[this.children.length - 1].text = t;
+		}
+	}
+	res.push("<i>");
+	for(i in this.children){
+
+		var it = this.children[i];
+		res.push(it.Render(wikiparser));
+	}
+	res.push("</i>");
+	return res.join("");
+};
+//////////////////////////////
 function DelTagNode(){
 	this.type = "DEL";
 	this.children = [];
@@ -575,6 +610,30 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
     }
 };
 //////////////////////////////
+function ItalicHooker(){
+	this.NAME = "ITALIC HOOKER";
+	this.NODE = ItalicNode;
+}
+ItalicHooker.prototype.DoMark = function(wikiparser,text){
+	var idx = 0;
+	var isStartTag = false;
+	while((idx = text.indexOf("''", idx)) != -1){
+        if(text.charAt(idx+2)=="'"){
+            idx += 3;
+            continue;
+        }
+		var tagType = MARK_TYPE.OPEN_TAG;
+		if(!isStartTag){
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+		}
+		else{
+			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 2);
+		}
+		isStartTag = !isStartTag;
+		idx += 2;
+    }
+};
+//////////////////////////////
 function HeadingHooker(){
     this.NAME = "HEADING HOOKER";
     this.NODE = HeadingNode;
@@ -673,6 +732,7 @@ function Parse(text){
     wikiparser.AddHooker(new TemplateHooker());
     wikiparser.AddHooker(new TableHooker());
 	wikiparser.AddHooker(new BoldTagHooker());
+    wikiparser.AddHooker(new ItalicHooker());
 	wikiparser.AddHooker(new BRTagHooker());
 	wikiparser.AddHooker(new DelLineHooker());
     wikiparser.AddHooker(new LinkHooker());
