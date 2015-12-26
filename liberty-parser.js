@@ -408,6 +408,28 @@ TemplateNode.prototype.Render = function(wikiparser){
 	return "[템플릿 있던 자리]";
 };
 //////////////////////////////
+function NumberedListNode(){
+	this.children = [];
+	this.NAME = "NUMBERED LIST";
+}
+NumberedListNode.prototype.Process = function(){
+	
+};
+NumberedListNode.prototype.Render = function(wikiparser){
+	
+};
+//////////////////////////////
+function UnnumberedListNode(){
+	this.children = [];
+	this.NAME = "UNNUMBERED LIST";
+}
+UnnumberedListNode.prototype.Process = function(){
+	
+};
+UnnumberedListNode.prototype.Render = function(wikiparser){
+	
+};
+//////////////////////////////
 function LibertyMark(){
 	this.children = [];
 }
@@ -679,6 +701,7 @@ BRTagHooker.prototype.DoMark = function(wikiparser,text){
 		idx += 2;
     }
 };
+
 //////////////////////////////
 function LinkHooker(){
     this.NAME = "LINK HOOKER";
@@ -715,6 +738,51 @@ DelLineHooker.prototype.DoMark = function(wikiparser,text){
 		isStartTag = !isStartTag;
 		idx += 2;
     }
+};
+//////////////////////////////
+function UnnumberedListHooker(){
+	this.NAME = "UNNUMBERED LIST HOOKER";
+    this.NODE = UnnumberedListNode;
+}
+UnnumberedListHooker.prototype.DoMark = function(wikiparser, text){
+	var lines = text.split("\n");
+	var isListStart = -1;
+	var idx = 0;
+	for(i in lines){
+		var line = lines[i];
+		if( isListStart == -1 && line.startsWith("* ")){
+			isListStart = i;
+			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
+		}
+		else if(isListStart != -1 && !list.startsWith("*"))
+		{
+			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx);
+			isListStart = -1;
+		}
+		idx += line.length + 1;
+	}
+};
+function NumberedListHooker(){
+	this.NAME = "NUMBERED LIST HOOKER";
+    this.NODE = NumberedListNode;
+}
+NumberedListHooker.prototype.DoMark = function(wikiparser,text){
+	var lines = text.split("\n");
+	var isListStart = -1;
+	var idx = 0;
+	for(i in lines){
+		var line = lines[i];
+		if( isListStart == -1 && line.startsWith("# ")){
+			isListStart = i;
+			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
+		}
+		else if(isListStart != -1 && !list.startsWith("#"))
+		{
+			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx);
+			isListStart = -1;
+		}
+		idx += line.length + 1;
+	}
 };
 //////////////////////////////
 function AfterRender(rendered){
