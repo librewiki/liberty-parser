@@ -110,13 +110,23 @@ LinkNode.prototype.Render = function(wikiparser){
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-    res.push(OnlyText(this,wikiparser));
+    for(var x in this.children){
+        console.log(this.children[x]);
+    }
+    var innerText = OnlyText(this,wikiparser).split("|");
+    var linkText = innerText[0];
+    if(innerText[1]==null){
+        showText = linkText;
+    }
+    else{
+        showText = innerText[1];
+    }
+    res.push(linkText);
     res.push('">');
-    res.push(OnlyText(this,wikiparser));
+    res.push(showText);
     res.push('</a>');
     return res.join("");
 };
-//링크를 하긴 했는데 다른링크 처리는 안 함 해야되는데 자러가야지 그리고 뭔가 비효율적인듯
 //////////////////////////////
 function RefNode(){
 
