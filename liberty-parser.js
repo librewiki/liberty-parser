@@ -120,27 +120,41 @@ HeadingNode.prototype.Process = function(wikiparser){
     // body...
 };
 HeadingNode.prototype.Render = function(wikiparser){
+    //레벨 2->4로 건너뛰면 버그 발생(MW도 비권장)
     var res = [];
-    console.log(this);
+    var curLv = wikiparser.headingQue[wikiparser.headingQueCurr];
+    var lastLv = wikiparser.headingQue[wikiparser.headingQueCurr-1];
     if(this.children[0].type == "TEXT"){
 		if(this.children[0].text.startsWith("=")){
-			this.children[0].text = this.children[0].text.substr(2);
+			this.children[0].text = this.children[0].text.substr(curLv);
 		}
 	}
 	if(this.children[this.children.length - 1].type == "TEXT"){
 		var t = this.children[this.children.length - 1].text;
 		if(t.endsWith("=")){
-			t = t.substring(0, t.length -2);
+			t = t.substring(0, t.length -curLv);
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-    res.push("<b>");
+    if(curLv<wikiparser.headingMin) wikiparser.headingMin = curLv;
+    if(wikiparser.headingQueCurr==0){
+        wikiparser.headingNumbering[0] = 1;
+    }
+    if(wikiparser.headingQueCurr!=0){
+    wikiparser.headingNumbering[curLv-wikiparser.headingMin]++;
+        if(curLv<lastLv){
+            for(var n = curLv-wikiparser.headingMin+1;n<6;n++)
+            wikiparser.headingNumbering[n] = 0;
+        }
+    }
+    wikiparser.headingQueCurr++;
+    res.push("<h"+curLv+">");
+    res.push(wikiparser.headingNumbering.join(".").replace(/.0/gi,""));
     for(i in this.children){
-
         var it = this.children[i];
         res.push(it.Render(wikiparser));
     }
-    res.push("</b>");
+    res.push("</h"+curLv+">");
     return res.join("");
 };
 //////////////////////////////
@@ -388,7 +402,10 @@ function HookMarker(hooker,markType){
 function WikiParser(){
     this.hookers = [];
     this.markList = [];
-    this.headingStack = [];
+    this.headingQue = [];
+    this.headingQueCurr = 0;
+    this.headingNumbering = [0,0,0,0,0,0];
+    this.headingMin = 100;
 }
 WikiParser.prototype.AddHooker = function(hooker){
     this.hookers.push(hooker);
@@ -581,6 +598,8 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
         idx = text.indexOf("=", idx2);
         wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx+compen+level);
         idx += level;
+        wikiparser.headingQue.push(level);
+        wikiparser.headingQueFront++;
     }
 }
 //////////////////////////////
