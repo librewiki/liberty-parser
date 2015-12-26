@@ -149,9 +149,9 @@ HeadingNode.prototype.Render = function(wikiparser){
         }
     }
     wikiparser.headingQueCurr++;
-    res.push("<h"+curLv+">");
+    res.push("<h"+curLv+'><a href="#toc">');
     res.push(wikiparser.headingNumbering.join(".").replace(/.0/gi,""));
-    res.push(". ");
+    res.push(".</a> ");
     var res2 = [];
     for(i in this.children){
         var it = this.children[i];
