@@ -35,10 +35,11 @@ function NowikiNode(){
 }
 NowikiNode.prototype.Process = function(){
 	var stack = [];
-
 };
 NowikiNode.prototype.Render = function(wikiparser){
-  return this.text.replace(/</gi,"&lt;").replace(/>/gi,"&gt;");
+    res = wikiparser.OnlyText(this);
+    return res.replace(/</gi,"&lt;").replace(/>/gi,"&gt;")
+    .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
 };
 //////////////////////////////
 function TextNode(text){
@@ -330,7 +331,7 @@ function LibertyMark(){
 	this.children = [];
 }
 LibertyMark.prototype.Render = function(wikiparser){
-	res = [];
+	var res = [];
 	for(i in this.children){
 		var iter = this.children[i];
 		res.push(iter.Render(wikiparser));
@@ -378,8 +379,19 @@ WikiParser.prototype.AddMark = function(marker,position){
         this.markList.push(item);
     }
 };
-WikiParser.prototype.DoBasicMarkTag = function(tagName){
-
+WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
+    var idx = 0;
+    var len = tagName.length;
+    console.log(hooker);
+    while((idx = text.indexOf("<"+tagName+">", idx)) != -1){
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
+        idx += len+2;
+    }
+    idx = 0;
+    while((idx = text.indexOf("</"+tagName+">", idx)) != -1){
+        idx += len+3;
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG),idx);
+    }
 };
 WikiParser.prototype.TextNodeParse = function(node){
 
@@ -449,7 +461,8 @@ function NowikiHooker(){
 	this.NODE = NowikiNode;
 }
 NowikiHooker.prototype.DoMark = function(wikiparser,text){
-    wikiparser.DoBasicMarkTag("nowiki");
+
+    wikiparser.DoBasicMarkTag(text, this, "nowiki");
 };
 //////////////////////////////
 function TemplateHooker(){
