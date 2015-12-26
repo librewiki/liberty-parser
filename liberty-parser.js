@@ -136,24 +136,28 @@ HeadingNode.prototype.Render = function(wikiparser){
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-    if(curLv<wikiparser.headingMin) wikiparser.headingMin = curLv;
+    if(curLv < wikiparser.headingMin) wikiparser.headingMin = curLv;
+    var min = wikiparser.headingMin;
     if(wikiparser.headingQueCurr==0){
         wikiparser.headingNumbering[0] = 1;
     }
     if(wikiparser.headingQueCurr!=0){
-    wikiparser.headingNumbering[curLv-wikiparser.headingMin]++;
+    wikiparser.headingNumbering[curLv-min]++;
         if(curLv<lastLv){
-            for(var n = curLv-wikiparser.headingMin+1;n<6;n++)
+            for(var n = curLv-min+1;n<6;n++)
             wikiparser.headingNumbering[n] = 0;
         }
     }
     wikiparser.headingQueCurr++;
     res.push("<h"+curLv+">");
     res.push(wikiparser.headingNumbering.join(".").replace(/.0/gi,""));
+    res.push(". ");
+    var res2 = [];
     for(i in this.children){
         var it = this.children[i];
-        res.push(it.Render(wikiparser));
+        res2.push(it.Render(wikiparser));
     }
+    res.push(res2.join("").trim());
     res.push("</h"+curLv+">");
     return res.join("");
 };
