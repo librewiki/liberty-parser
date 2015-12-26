@@ -53,10 +53,6 @@ TextNode.prototype.Render = function(wikiparser){
 	return this.text;
 };
 //////////////////////////////
-function HeadingNode(){
-
-}
-//////////////////////////////
 function BRNode(){
 	this.type = "BR";
     this.children = [];
@@ -116,10 +112,49 @@ function ReferenceNode(){
 
 }
 //////////////////////////////
+function HeadingNode(){
+    this.type = "HEADING";
+    this.children = [];
+}
+HeadingNode.prototype.Process = function(wikiparser){
+    // body...
+};
+HeadingNode.prototype.Render = function(wikiparser){
+    var res = [];
+    console.log(this);
+    if(this.children[0].type == "TEXT"){
+		if(this.children[0].text.startsWith("=")){
+			this.children[0].text = this.children[0].text.substr(2);
+		}
+	}
+	if(this.children[this.children.length - 1].type == "TEXT"){
+		var t = this.children[this.children.length - 1].text;
+		if(t.endsWith("=")){
+			t = t.substring(0, t.length -2);
+			this.children[this.children.length - 1].text = t;
+		}
+	}
+    res.push("<b>");
+    for(i in this.children){
+
+        var it = this.children[i];
+        res.push(it.Render(wikiparser));
+    }
+    res.push("</b>");
+    return res.join("");
+};
+//////////////////////////////
 function BoldNode(){
 	this.type = "BOLD";
 	this.children = [];
 }
+BoldNode.prototype.Process = function(){
+	for(i in this.children){
+
+		var it = this.children[i];
+		it.Process();
+	}
+};
 BoldNode.prototype.Render = function(wikiparser){
 	var res = [];
 	if(this.children[0].type == "TEXT"){
@@ -142,13 +177,6 @@ BoldNode.prototype.Render = function(wikiparser){
 	}
 	res.push("</b>");
 	return res.join("");
-};
-BoldNode.prototype.Process = function(){
-	for(i in this.children){
-
-		var it = this.children[i];
-		it.Process();
-	}
 };
 //////////////////////////////
 function DelTagNode(){
@@ -360,6 +388,7 @@ function HookMarker(hooker,markType){
 function WikiParser(){
     this.hookers = [];
     this.markList = [];
+    this.headingStack = [];
 }
 WikiParser.prototype.AddHooker = function(hooker){
     this.hookers.push(hooker);
@@ -382,7 +411,6 @@ WikiParser.prototype.AddMark = function(marker,position){
 WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
     var idx = 0;
     var len = tagName.length;
-    console.log(hooker);
     while((idx = text.indexOf("<"+tagName+">", idx)) != -1){
         this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
         idx += len+2;
@@ -399,7 +427,6 @@ WikiParser.prototype.TextNodeParse = function(node){
 };
 WikiParser.prototype.OnlyText = function(node){
     //자손 노드중 텍스트 노드만 처리한다
-    //재귀가 더 깔끔하긴 한데..좀...
     var res = [];
     function recursion(current){
         if(current.type=="TEXT"){
@@ -527,6 +554,36 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
     }
 };
 //////////////////////////////
+function HeadingHooker(){
+    this.NAME = "HEADING HOOKER";
+    this.NODE = HeadingNode;
+}
+HeadingHooker.prototype.DoMark = function(wikiparser,text){
+    var idx = 0;
+    var compen = 0;
+    if(text.charAt(0)=="="){
+        text = "\n"+text;
+        compen = -1;
+    }
+    while((idx = text.indexOf("\n=", idx)) != -1){
+        idx+=1;
+        var max = idx+8;
+        var level = 0;
+        var idx2  = 0
+        for(idx2 = idx; idx2<max; idx2++){
+            if(text.charAt(idx2)=="="){
+                level++;
+            }else{
+                break;
+            }
+        }
+        wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx+compen);
+        idx = text.indexOf("=", idx2);
+        wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx+compen+level);
+        idx += level;
+    }
+}
+//////////////////////////////
 function BRTagHooker(){
 	this.NAME = "BRTAG HOOKER";
 	this.NODE = BRNode;
@@ -596,6 +653,7 @@ function Parse(text){
 	wikiparser.AddHooker(new BRTagHooker());
 	wikiparser.AddHooker(new DelLineHooker());
     wikiparser.AddHooker(new LinkHooker());
+    wikiparser.AddHooker(new HeadingHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
