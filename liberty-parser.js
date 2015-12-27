@@ -95,7 +95,7 @@ LinkNode.prototype.Render = function(wikiparser){
         showText = linkText;
     }
     else{
-        showText = innerText[1];
+        showText = innerText.slice(1).join("|");
     }
     res.push(linkText);
     res.push('">');
@@ -187,13 +187,13 @@ BoldNode.prototype.Render = function(wikiparser){
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-	res.push("<b>");
+	res.push("<strong>");
 	for(i in this.children){
 
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
-	res.push("</b>");
+	res.push("</strong>");
 	return res.join("");
 };
 //////////////////////////////
@@ -222,13 +222,13 @@ ItalicNode.prototype.Render = function(wikiparser){
 			this.children[this.children.length - 1].text = t;
 		}
 	}
-	res.push("<i>");
+	res.push("<em>");
 	for(i in this.children){
 
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
-	res.push("</i>");
+	res.push("</em>");
 	return res.join("");
 };
 //////////////////////////////
@@ -413,10 +413,10 @@ function NumberedListNode(){
 	this.NAME = "NUMBERED LIST";
 }
 NumberedListNode.prototype.Process = function(){
-	
+
 };
 NumberedListNode.prototype.Render = function(wikiparser){
-	
+
 };
 //////////////////////////////
 function UnnumberedListNode(){
@@ -424,10 +424,10 @@ function UnnumberedListNode(){
 	this.NAME = "UNNUMBERED LIST";
 }
 UnnumberedListNode.prototype.Process = function(){
-	
+
 };
 UnnumberedListNode.prototype.Render = function(wikiparser){
-	
+
 };
 //////////////////////////////
 function LibertyMark(){
@@ -635,7 +635,7 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 function ItalicHooker(){
 	this.NAME = "ITALIC HOOKER";
 	this.NODE = ItalicNode;
-} 
+}
 ItalicHooker.prototype.DoMark = function(wikiparser,text){
 	var idx = 0;
 	var isStartTag = false;
