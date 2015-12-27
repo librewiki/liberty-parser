@@ -105,11 +105,19 @@ LinkNode.prototype.Render = function(wikiparser){
 };
 //////////////////////////////
 function RefNode(){
-
+    this.type = "REF";
+    this.children = [];
 }
+RefNode.prototype.Process = function(wikiparser){
+    // body...
+};
+RefNode.prototype.Render = function(wikiparser){
+    // body...
+};
 //////////////////////////////
 function ReferenceNode(){
-
+    this.type = "REFERENCE";
+    this.children = [];
 }
 //////////////////////////////
 function HeadingNode(){
@@ -453,12 +461,14 @@ var MARK_TYPE = {
     OPEN_TAG:"OPEN",
     CLOSE_TAG:"CLOSE"
 };
-function HookMarker(hooker,markType){
+function HookMarker(hooker,markType,option){
 	if(hooker == null) throw "hooker is null!";
 	if(markType == null) throw "mark type is null!";
+    if(option == null) option = [];
     this.hooker = hooker;
     this.markType = markType;
 	this.NAME = "HOOK MARKER";
+    this.option = option;
 }
 function WikiParser(){
     this.hookers = [];
@@ -487,14 +497,25 @@ WikiParser.prototype.AddMark = function(marker,position){
     }
 };
 WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
+    var lower = text.toLowerCase();
+	var startTag = /^<([-A-Za-z0-9_]+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
+		endTag = /^<\/([-A-Za-z0-9_]+)[^>]*>/,
+		attr = /([-A-Za-z0-9_]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
     var idx = 0;
     var len = tagName.length;
-    while((idx = text.indexOf("<"+tagName+">", idx)) != -1){
-        this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
+    var opt = [];
+    while((idx = lower.indexOf("<"+tagName, idx)) != -1){
+        var temp = (startTag.exec(lower.substr(idx))[2]).split(attr);
+        for(var i=1;i<temp.length;i+=5){
+            opt.push(temp[i]);
+            opt.push(temp[i+1]);
+        }
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx,opt);
         idx += len+2;
+        opt = [];
     }
     idx = 0;
-    while((idx = text.indexOf("</"+tagName+">", idx)) != -1){
+    while((idx = lower.indexOf("</"+tagName, idx)) != -1){
         idx += len+3;
         this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG),idx);
     }
@@ -686,6 +707,14 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
         wikiparser.headingQue.push(level);
         wikiparser.headingQueFront++;
     }
+}
+//////////////////////////////
+function RefHooker(){
+    this.NAME = "REF HOOKER";
+    this.NODE = RefNode;
+}
+RefHooker.prototype.DoMark = function(wikiparser,text){
+
 }
 //////////////////////////////
 function BRTagHooker(){
