@@ -109,10 +109,38 @@ function RefNode(){
     this.children = [];
 }
 RefNode.prototype.Process = function(wikiparser){
-    // body...
+	for(i in this.children){
+
+		var it = this.children[i];
+		it.Process();
+	}
 };
 RefNode.prototype.Render = function(wikiparser){
-    // body...
+    var num = ++wikiparser.referNum;
+    var option = wikiparser.AttrParse(this.children[0].text);
+    var res = [];
+    var alreadyNamed = false;
+    for(var i in option){
+        if(option[i][0]="name"){
+            var refname = option[i][1];
+            for(var j in wikiparser.referNaming){
+                if(wikiparser.referNaming[j][0]==refname){
+                    num = wikiparser.referNaming[j][1];
+                    alreadyNamed = true;
+                    wikiparser.referNum--;
+                    break;
+                }
+            }
+            if(alreadyNamed==false) wikiparser.referNaming.push([option[i][1],num]);
+            break;
+        }
+    }
+    res.push('<sup><a href="#cite_note-')
+    res.push(num);
+    res.push('"><span class="reference-hooker">[');
+    res.push(num);
+    res.push("]</span></a></sup>");
+    return res.join("");
 };
 //////////////////////////////
 function ReferenceNode(){
@@ -461,14 +489,12 @@ var MARK_TYPE = {
     OPEN_TAG:"OPEN",
     CLOSE_TAG:"CLOSE"
 };
-function HookMarker(hooker,markType,option){
+function HookMarker(hooker,markType){
 	if(hooker == null) throw "hooker is null!";
 	if(markType == null) throw "mark type is null!";
-    if(option == null) option = [];
     this.hooker = hooker;
     this.markType = markType;
 	this.NAME = "HOOK MARKER";
-    this.option = option;
 }
 function WikiParser(){
     this.hookers = [];
@@ -477,6 +503,8 @@ function WikiParser(){
     this.headingQueCurr = 0;
     this.headingNumbering = [0,0,0,0,0,0];
     this.headingMin = 100;
+    this.referNaming = []; //[name, num]을 저장
+    this.referNum = 0;
 }
 WikiParser.prototype.AddHooker = function(hooker){
     this.hookers.push(hooker);
@@ -498,21 +526,11 @@ WikiParser.prototype.AddMark = function(marker,position){
 };
 WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
     var lower = text.toLowerCase();
-	var startTag = /^<([-A-Za-z0-9_]+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
-		endTag = /^<\/([-A-Za-z0-9_]+)[^>]*>/,
-		attr = /([-A-Za-z0-9_]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
     var idx = 0;
     var len = tagName.length;
-    var opt = [];
     while((idx = lower.indexOf("<"+tagName, idx)) != -1){
-        var temp = (startTag.exec(lower.substr(idx))[2]).split(attr);
-        for(var i=1;i<temp.length;i+=5){
-            opt.push(temp[i]);
-            opt.push(temp[i+1]);
-        }
-        this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx,opt);
-        idx += len+2;
-        opt = [];
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
+        idx = lower.indexOf(">", idx);
     }
     idx = 0;
     while((idx = lower.indexOf("</"+tagName, idx)) != -1){
@@ -523,6 +541,18 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
 WikiParser.prototype.TextNodeParse = function(node){
 
 	return node;
+};
+WikiParser.prototype.AttrParse = function(text){
+    var startTag = /^<([-A-Za-z0-9_]+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
+		endTag = /^<\/([-A-Za-z0-9_]+)[^>]*>/,
+		attr = /([-A-Za-z0-9_]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
+    var lower = text.toLowerCase();
+    var temp = (startTag.exec(lower)[2]).split(attr);
+    var opt = [];
+    for(var i=1;i<temp.length;i+=5){
+        opt.push([temp[i],temp[i+1]]);
+    }
+    return opt;
 };
 WikiParser.prototype.OnlyText = function(node){
     //자손 노드중 텍스트 노드만 처리한다
@@ -714,7 +744,7 @@ function RefHooker(){
     this.NODE = RefNode;
 }
 RefHooker.prototype.DoMark = function(wikiparser,text){
-
+    wikiparser.DoBasicMarkTag(text, this, "ref");
 }
 //////////////////////////////
 function BRTagHooker(){
@@ -834,6 +864,7 @@ function Parse(text){
 	wikiparser.AddHooker(new DelLineHooker());
     wikiparser.AddHooker(new LinkHooker());
     wikiparser.AddHooker(new HeadingHooker());
+    wikiparser.AddHooker(new RefHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
