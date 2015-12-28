@@ -88,7 +88,7 @@ LinkNode.prototype.Render = function(wikiparser){
 	}
     var innerText = wikiparser.OnlyText(this).split("|");
     var linkText = innerText[0];
-    if(innerText[1]==null){
+    if(innerText[1]===undefined){
         showText = linkText;
     }
     else{
@@ -129,7 +129,7 @@ RefNode.prototype.Render = function(wikiparser){
     var res = [];
     var alreadyNamed = false;
     for(var i in option){
-        if(option[i][0]="name"){
+        if(option[i][0]=="name"){
             var refname = option[i][1];
             for(var j in wikiparser.referNaming){
                 if(wikiparser.referNaming[j][0]==refname){
@@ -139,7 +139,7 @@ RefNode.prototype.Render = function(wikiparser){
                     break;
                 }
             }
-            if(alreadyNamed==false) wikiparser.referNaming.push([option[i][1],num]);
+            if(alreadyNamed===false) wikiparser.referNaming.push([option[i][1],num]);
             break;
         }
     }
@@ -331,7 +331,7 @@ TableNode.prototype.Process = function(){
 	var isStartCell = 0;
 	var posPreBar = -1;
 	var j = -1;
-	if(this.children[0] != null){
+	if(this.children[0] !== undefined){
 		if(this.children[0].type == "TEXT"){
 			var temp = this.children[0].text;
 			temp = temp.substring(2,temp.length);
@@ -643,8 +643,8 @@ var MARK_TYPE = {
     CLOSE_TAG:"CLOSE"
 };
 function HookMarker(hooker,markType){
-	if(hooker == null) throw "hooker is null!";
-	if(markType == null) throw "mark type is null!";
+	if(hooker === undefined) throw "hooker is undefined!";
+	if(markType === undefined) throw "mark type is undefined!";
     this.hooker = hooker;
     this.markType = markType;
 	this.NAME = "HOOK MARKER";
