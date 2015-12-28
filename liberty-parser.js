@@ -64,9 +64,6 @@ BRNode.prototype.Render = function(wikiparser){
 	return "<br />";
 };
 //////////////////////////////
-/*
-*[[LINK]],[[LINK|TEXT]]
-*/
 function LinkNode(){
     this.type = "LINK";
     this.children = [];
@@ -534,8 +531,8 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
     }
     idx = 0;
     while((idx = lower.indexOf("</"+tagName, idx)) != -1){
-        idx += len+3;
-        this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG),idx);
+        idx = lower.indexOf(">", idx);
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG),idx+1);
     }
 };
 WikiParser.prototype.TextNodeParse = function(node){
@@ -600,6 +597,7 @@ WikiParser.prototype.Parse = function(text){
 				stack.push(node);
 			break;
 			case MARK_TYPE.STANDALONE:
+                stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
 				stack[stack.length - 1].children.push(new iter.marker.hooker.NODE());
 			break;
 		}
@@ -754,13 +752,10 @@ function BRTagHooker(){
 BRTagHooker.prototype.DoMark = function(wikiparser,text){
 	var idx = 0;
 	while((idx = text.indexOf("\n\n", idx)) != -1){
-		var tagType = MARK_TYPE.OPEN_TAG;
-		wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
-		wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx+1);
+		wikiparser.AddMark(new HookMarker(this, MARK_TYPE.STANDALONE),idx+1);
 		idx += 2;
     }
 };
-
 //////////////////////////////
 function LinkHooker(){
     this.NAME = "LINK HOOKER";
