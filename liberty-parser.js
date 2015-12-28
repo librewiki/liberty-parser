@@ -1,6 +1,6 @@
 "USE STRICT"
-//*EDITING BY DAMEZUMA
-//*author DAMEZUMA
+//*EDITING BY DAMEZUMA, NESSUN
+//*author DAMEZUMA, NESSUN
 //publish by MIT
 //각 클래스 메소드 별 역할
 //Render() -> 노드를 HTML로 변환한다.
