@@ -429,19 +429,18 @@ TableNode.prototype.Render = function(wikiparser){
 	for(var i in this.cells){
 		var row = this.cells[i];
 		res.push("<tr>");
-		for(j in row){
+		for(var j in row){
 			var cell = row[j];
 			res.push("<td ");
 			res.push(cell.attr);
 			res.push(">");
-			for(k in cell.children)
-			{
+			for(var k in cell.children){
 				var iter = cell.children[k];
 				res.push(iter.Render(wikiparser));
 			}
 			res.push("</td>");
 		}
-		res.push("</tr>")
+		res.push("</tr>");
 	}
 	res.push("</table>");
 	return res.join("");
@@ -473,7 +472,7 @@ NumberedListNode.prototype.Render = function(wikiparser){
     var res = [];
     var stepCount = 0;
     var isNewLine = true;
-    for(i in this.children){
+    for(var i in this.children){
         var iter = this.children[i];
         if(iter.type != "TEXT"){
             res.push(iter.Render(wikiparser));
@@ -611,8 +610,8 @@ UnnumberedListNode.prototype.Render = function(wikiparser){
     }
     if(stepCount != 0){
         for(;stepCount != 0;stepCount--){
-            res.push("</li>")
-            res.push("</ul>")
+            res.push("</li>");
+            res.push("</ul>");
         }
     }
 
@@ -673,7 +672,7 @@ WikiParser.prototype.AddMark = function(marker,position){
             break;
         }
     }
-    if(isDoneInsert == false){
+    if(isDoneInsert === false){
         this.markList.push(item);
     }
 };
@@ -1006,7 +1005,7 @@ function UnnumberedListHooker(){
     this.NODE = UnnumberedListNode;
 }
 UnnumberedListHooker.prototype.DoMark = function(wikiparser, text){
-    if(text.endsWith("\n") == false){
+    if(text.endsWith("\n") === false){
         text = text.concat("\n");
     }
     var lines = text.split("\n");
