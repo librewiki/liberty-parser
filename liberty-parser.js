@@ -326,7 +326,7 @@ TableNode.prototype.Process = function(){
             case 0:{
               posPreBar = j;
               isStartCell = 1;
-              item = {attr:"",children:[]};
+              item = {attr:"",children:[],isHead:false};
             }
             break;
             case 1:{
@@ -342,12 +342,17 @@ TableNode.prototype.Process = function(){
               item.children.push(newTextNode);
               res[row].push(item);
               children.push(newTextNode);
-              item = {attr:"",children:[]};
+              item = {attr:"",children:[],isHead:false};
               isStartCell = 1;
               posPreBar = j;
             }
             break;
           }
+        }
+        else if(temp[j] == "!" && isStartCell == 0){
+          isStartCell = 1;
+          item = {attr:"",children:[],isHead:true};
+          posPreBar = j;
         }
         else if(temp[j] == '\n' && isStartCell != 0){
           var t = temp.substring(posPreBar+1,j);
@@ -389,7 +394,14 @@ TableNode.prototype.Render = function(wikiparser){
     res.push("<tr>");
     for(j in row){
       var cell = row[j];
-      res.push("<td ");
+      
+      res.push("<");
+      if(cell.isHead){
+        res.push("th ");
+      }
+      else{
+        res.push("td ");
+      }
       res.push(cell.attr);
       res.push(">");
       for(k in cell.children)
