@@ -140,17 +140,31 @@ RefNode.prototype.Render = function(wikiparser){
     return res.join("");
 };
 //////////////////////////////
-function ReferenceNode(){
-    this.type = "REFERENCE";
+function ReferencesNode(){
+    this.type = "REFERENCES";
     this.children = [];
 }
+ReferencesNode.prototype.Process = function(wikiparser){
+    for(i in this.children){
+
+        var it = this.children[i];
+        it.Process();
+    }
+};
+ReferencesNode.prototype.Render = function(wikiparser){
+    return("refs here");
+};
 //////////////////////////////
 function HeadingNode(){
     this.type = "HEADING";
     this.children = [];
 }
 HeadingNode.prototype.Process = function(wikiparser){
-    // body...
+    for(i in this.children){
+
+        var it = this.children[i];
+        it.Process();
+    }
 };
 HeadingNode.prototype.Render = function(wikiparser){
     //레벨 2->4로 건너뛰면 버그 발생(MW도 비권장)
@@ -525,7 +539,12 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
     var lower = text.toLowerCase();
     var idx = 0;
     var len = tagName.length;
-    while((idx = lower.indexOf("<"+tagName, idx)) != -1){
+    while((idx = lower.indexOf("<"+tagName+" ", idx)) != -1){
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
+        idx = lower.indexOf(">", idx);
+    }
+    idx = 0;
+    while((idx = lower.indexOf("<"+tagName+">", idx)) != -1){
         this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
         idx = lower.indexOf(">", idx);
     }
@@ -533,6 +552,15 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
     while((idx = lower.indexOf("</"+tagName, idx)) != -1){
         idx = lower.indexOf(">", idx);
         this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG),idx+1);
+    }
+};
+WikiParser.prototype.DoBasicMarkStandaloneTag = function(text,hooker,tagName){
+    var lower = text.toLowerCase();
+    var idx = 0;
+    var len = tagName.length;
+    while((idx = lower.indexOf("<"+tagName, idx)) != -1){
+        this.AddMark(new HookMarker(hooker, MARK_TYPE.STANDALONE),idx);
+        idx = lower.indexOf(">", idx);
     }
 };
 WikiParser.prototype.TextNodeParse = function(node){
@@ -745,6 +773,14 @@ RefHooker.prototype.DoMark = function(wikiparser,text){
     wikiparser.DoBasicMarkTag(text, this, "ref");
 }
 //////////////////////////////
+function ReferencesHooker(){
+    this.NAME = "REFERENCES HOOKER";
+    this.NODE = ReferencesNode;
+}
+ReferencesHooker.prototype.DoMark = function(wikiparser,text){
+    wikiparser.DoBasicMarkTag(text, this, "references");
+}
+//////////////////////////////
 function BRTagHooker(){
 	this.NAME = "BRTAG HOOKER";
 	this.NODE = BRNode;
@@ -860,6 +896,7 @@ function Parse(text){
     wikiparser.AddHooker(new LinkHooker());
     wikiparser.AddHooker(new HeadingHooker());
     wikiparser.AddHooker(new RefHooker());
+    wikiparser.AddHooker(new ReferencesHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
