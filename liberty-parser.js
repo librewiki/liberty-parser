@@ -1,4 +1,4 @@
-"USE STRICT"
+"USE STRICT";
 //*EDITING BY DAMEZUMA
 //*author DAMEZUMA
 //publish by MIT
@@ -100,14 +100,25 @@ LinkNode.prototype.Render = function(wikiparser){
     res.push('</a>');
     return res.join("");
 };
+
+
+function ExtLinkNode(){
+    this.type = "EXTERNAL LINK";
+    this.children = [];
+}
+ExtLinkNode.prototype.Process = function(){
+
+};
+ExtLinkNode.prototype.Render = function(wikiparser){
+    return "EXTERNAL LINK";
+};
 //////////////////////////////
 function RefNode(){
     this.type = "REF";
     this.children = [];
 }
 RefNode.prototype.Process = function(wikiparser){
-	for(i in this.children){
-
+	for(var i in this.children){
 		var it = this.children[i];
 		it.Process();
 	}
@@ -132,7 +143,7 @@ RefNode.prototype.Render = function(wikiparser){
             break;
         }
     }
-    res.push('<sup><a href="#cite_note-')
+    res.push('<sup><a href="#cite_note-');
     res.push(num);
     res.push('"><span class="reference-hooker">[');
     res.push(num);
@@ -145,8 +156,7 @@ function ReferencesNode(){
     this.children = [];
 }
 ReferencesNode.prototype.Process = function(wikiparser){
-    for(i in this.children){
-
+    for(var i in this.children){
         var it = this.children[i];
         it.Process();
     }
@@ -160,8 +170,7 @@ function HeadingNode(){
     this.children = [];
 }
 HeadingNode.prototype.Process = function(wikiparser){
-    for(i in this.children){
-
+    for(var i in this.children){
         var it = this.children[i];
         it.Process();
     }
@@ -185,10 +194,10 @@ HeadingNode.prototype.Render = function(wikiparser){
 	}
     if(curLv < wikiparser.headingMin) wikiparser.headingMin = curLv;
     var min = wikiparser.headingMin;
-    if(wikiparser.headingQueCurr==0){
+    if(wikiparser.headingQueCurr===0){
         wikiparser.headingNumbering[0] = 1;
     }
-    if(wikiparser.headingQueCurr!=0){
+    if(wikiparser.headingQueCurr!==0){
     wikiparser.headingNumbering[curLv-min]++;
         if(curLv<lastLv){
             for(var n = curLv-min+1;n<6;n++)
@@ -200,7 +209,7 @@ HeadingNode.prototype.Render = function(wikiparser){
     res.push(wikiparser.headingNumbering.join(".").replace(/.0/gi,""));
     res.push(".</a> ");
     var res2 = [];
-    for(i in this.children){
+    for(var i in this.children){
         var it = this.children[i];
         res2.push(it.Render(wikiparser));
     }
@@ -214,8 +223,7 @@ function BoldNode(){
 	this.children = [];
 }
 BoldNode.prototype.Process = function(){
-	for(i in this.children){
-
+	for(var i in this.children){
 		var it = this.children[i];
 		it.Process();
 	}
@@ -235,7 +243,7 @@ BoldNode.prototype.Render = function(wikiparser){
 		}
 	}
 	res.push("<strong>");
-	for(i in this.children){
+	for(var i in this.children){
 
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
@@ -249,8 +257,7 @@ function ItalicNode(){
 	this.children = [];
 }
 ItalicNode.prototype.Process = function(){
-	for(i in this.children){
-
+	for(var i in this.children){
 		var it = this.children[i];
 		it.Process();
 	}
@@ -270,8 +277,7 @@ ItalicNode.prototype.Render = function(wikiparser){
 		}
 	}
 	res.push("<em>");
-	for(i in this.children){
-
+	for(var i in this.children){
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
@@ -284,8 +290,7 @@ function DelTagNode(){
 	this.children = [];
 }
 DelTagNode.prototype.Process = function(){
-
-	for(i in this.children){
+	for(var i in this.children){
 		var it = this.children[i];
 		it.Process();
 	}
@@ -305,8 +310,7 @@ DelTagNode.prototype.Render = function(wikiparser){
 		}
 	}
 	res.push("<s>");
-	for(i in this.children){
-
+	for(var i in this.children){
 		var it = this.children[i];
 		res.push(it.Render(wikiparser));
 	}
@@ -422,7 +426,7 @@ TableNode.prototype.Render = function(wikiparser){
 	res.push("<table ");
 	res.push(this.tableattr);
 	res.push(">");
-	for(i in this.cells){
+	for(var i in this.cells){
 		var row = this.cells[i];
 		res.push("<tr>");
 		for(j in row){
@@ -460,10 +464,79 @@ function NumberedListNode(){
 	this.NAME = "NUMBERED LIST";
 }
 NumberedListNode.prototype.Process = function(){
-
+	for(var i in this.children){
+    	var it = this.children[i];
+		it.Process();
+	}
 };
 NumberedListNode.prototype.Render = function(wikiparser){
+    var res = [];
+    var stepCount = 0;
+    var isNewLine = true;
+    for(i in this.children){
+        var iter = this.children[i];
+        if(iter.type != "TEXT"){
+            res.push(iter.Render(wikiparser));
+        }
+        else{
+            //새 줄이면 처음에 *이 몇개 있는지 체크해야 한다.
+            var text = iter.text;
 
+            var j = 0;
+            var k = 0;
+            for(j = 0 ; j < text.length ; j++){
+                if(isNewLine){
+                    isNewLine = false;
+                    var nowStepCount = 0;
+                    for(k = j; k < text.length ; k++){
+                        if(text[k] == "#"){
+                            nowStepCount++;
+                        }
+                        else{
+                            break;
+                        }
+                    }
+                    if(stepCount < nowStepCount){
+                        res.push("<ol type=\"1\">");
+                    }
+                    res.push("<li>");
+                    stepCount = nowStepCount;
+                    j = k;
+                }
+                else{
+                    if(text[j] == '\n'){
+                        var nowStepCount = 0;
+                        for(k = j + 1; k < text.length ; k++){
+                            if(text[k] == "#"){
+                                nowStepCount++;
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                        if(stepCount > nowStepCount){
+                            res.push("</ol>");
+                        }
+                        if(stepCount >= nowStepCount){
+                            res.push("</li>");
+                        }
+                        isNewLine = true;
+                    }
+                    else{
+                        res.push(text[j]);
+                    }
+                }
+            }
+        }
+    }
+    if(stepCount != 0){
+        for(;stepCount != 0;stepCount--){
+            res.push("</li>");
+            res.push("</ol>");
+        }
+    }
+
+    return res.join("");
 };
 //////////////////////////////
 function UnnumberedListNode(){
@@ -471,10 +544,79 @@ function UnnumberedListNode(){
 	this.NAME = "UNNUMBERED LIST";
 }
 UnnumberedListNode.prototype.Process = function(){
-
+	for(var i in this.children){
+        var it = this.children[i];
+        it.Process();
+    }
 };
 UnnumberedListNode.prototype.Render = function(wikiparser){
+	var res = [];
+    var stepCount = 0;
+    var isNewLine = true;
+    for(var i in this.children){
+        var iter = this.children[i];
+        if(iter.type != "TEXT"){
+            res.push(iter.Render(wikiparser));
+        }
+        else{
+//새 줄이면 처음에 *이 몇개 있는지 체크해야 한다.
+            var text = iter.text;
 
+            var j = 0;
+            var k = 0;
+            for(j = 0 ; j < text.length ; j++){
+                if(isNewLine){
+                    isNewLine = false;
+                    var nowStepCount = 0;
+                    for(k = j; k < text.length ; k++){
+                        if(text[k] == "*"){
+                            nowStepCount++;
+                        }
+                        else{
+                            break;
+                        }
+                    }
+                    if(stepCount < nowStepCount){
+                        res.push("<ul>");
+                    }
+                    res.push("<li>");
+                    stepCount = nowStepCount;
+                    j = k;
+                }
+                else{
+                    if(text[j] == '\n'){
+                        var nowStepCount = 0;
+                        for(k = j + 1; k < text.length ; k++){
+                            if(text[k] == "*"){
+                                nowStepCount++;
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                        if(stepCount > nowStepCount){
+                            res.push("</ul>");
+                        }
+                        if(stepCount >= nowStepCount){
+                            res.push("</li>");
+                        }
+                        isNewLine = true;
+                    }
+                    else{
+                        res.push(text[j]);
+                    }
+                }
+            }
+        }
+    }
+    if(stepCount != 0){
+        for(;stepCount != 0;stepCount--){
+            res.push("</li>")
+            res.push("</ul>")
+        }
+    }
+
+    return res.join("");
 };
 //////////////////////////////
 function LibertyMark(){
@@ -482,7 +624,7 @@ function LibertyMark(){
 }
 LibertyMark.prototype.Render = function(wikiparser){
 	var res = [];
-	for(i in this.children){
+	for(var i in this.children){
 		var iter = this.children[i];
 		res.push(iter.Render(wikiparser));
 	}
@@ -490,7 +632,7 @@ LibertyMark.prototype.Render = function(wikiparser){
 };
 LibertyMark.prototype.Process = function(){
 	res = [];
-	for(i in this.children){
+	for(var i in this.children){
 		var iter = this.children[i];
 		iter.Process();
 	}
@@ -523,7 +665,7 @@ WikiParser.prototype.AddHooker = function(hooker){
 WikiParser.prototype.AddMark = function(marker,position){
     var isDoneInsert = false;
     var item = {marker:marker,position:position};
-    for(i in this.markList){
+    for(var i in this.markList){
         var iter = this.markList[i];
         if(iter.position > position){
             this.markList.splice(i,0,item);
@@ -594,10 +736,10 @@ WikiParser.prototype.OnlyText = function(node){
     }
     recursion(node);
     return res.join("");
-}
+};
 WikiParser.prototype.Parse = function(text){
     //여기로 위키텍스트 들어간다
-    for(i in this.hookers){
+    for(var i in this.hookers){
         //후커 돌면서 DoMark 실행
 		var hooker = this.hookers[i];
 		hooker.DoMark(this,text);
@@ -756,7 +898,7 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
         idx+=1;
         var max = idx+8;
         var level = 0;
-        var idx2  = 0
+        var idx2  = 0;
         for(idx2 = idx; idx2<max; idx2++){
             if(text.charAt(idx2)=="="){
                 level++;
@@ -771,7 +913,7 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
         wikiparser.headingQue.push(level);
         wikiparser.headingQueFront++;
     }
-}
+};
 //////////////////////////////
 function RefHooker(){
     this.NAME = "REF HOOKER";
@@ -779,7 +921,7 @@ function RefHooker(){
 }
 RefHooker.prototype.DoMark = function(wikiparser,text){
     wikiparser.DoBasicMarkTag(text, this, "ref");
-}
+};
 //////////////////////////////
 function ReferencesHooker(){
     this.NAME = "REFERENCES HOOKER";
@@ -787,7 +929,7 @@ function ReferencesHooker(){
 }
 ReferencesHooker.prototype.DoMark = function(wikiparser,text){
     wikiparser.DoBasicMarkTag(text, this, "references");
-}
+};
 //////////////////////////////
 function BRTagHooker(){
 	this.NAME = "BRTAG HOOKER";
@@ -818,6 +960,27 @@ LinkHooker.prototype.DoMark = function(wikiparser,text){
     }
 };
 //////////////////////////////
+function ExtLinkHooker(){
+    this.NAME = "EXTERNAL LINK HOOKER";
+    this.NODE = ExtLinkNode;
+}
+ExtLinkHooker.prototype.DoMark = function(wikiparser,text){
+    var idx = 0;
+	while((idx = text.indexOf("[", idx)) != -1){
+        if(text.charAt(idx+1)!="["){
+            wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+            idx += 1;
+        }else idx += 2;
+    }
+    idx = 0;
+    while((idx = text.indexOf("]", idx)) != -1){
+		if(text.charAt(idx+1)!="]"){
+            idx += 1;
+            wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
+        }else idx += 2;
+    }
+};
+//////////////////////////////
 function DelLineHooker(){
 	this.NAME = "DELTAG HOOKER";
 	this.NODE = DelTagNode;
@@ -843,50 +1006,51 @@ function UnnumberedListHooker(){
     this.NODE = UnnumberedListNode;
 }
 UnnumberedListHooker.prototype.DoMark = function(wikiparser, text){
-	var lines = text.split("\n");
-	var isListStart = -1;
-	var idx = 0;
-	for(i in lines){
-		var line = lines[i];
-		if( isListStart == -1 && line.startsWith("* ")){
-			isListStart = i;
-			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
-		}
-		else if(isListStart != -1 && !list.startsWith("*"))
-		{
-			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx);
-			isListStart = -1;
-		}
-		idx += line.length + 1;
-	}
+    if(text.endsWith("\n") == false){
+        text = text.concat("\n");
+    }
+    var lines = text.split("\n");
+    var isListStart = -1;
+    var idx = 0;
+    for(var i in lines){
+        var line = lines[i];
+        if( isListStart == -1 && line.startsWith("* ")){
+            isListStart = i;
+            wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
+        }
+        else if(isListStart != -1 && !line.startsWith("*")){
+            wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx - 1);
+            isListStart = -1;
+        }
+        idx += line.length + 1;
+    }
 };
 function NumberedListHooker(){
 	this.NAME = "NUMBERED LIST HOOKER";
     this.NODE = NumberedListNode;
 }
 NumberedListHooker.prototype.DoMark = function(wikiparser,text){
-	var lines = text.split("\n");
-	var isListStart = -1;
-	var idx = 0;
-	for(i in lines){
-		var line = lines[i];
-		if( isListStart == -1 && line.startsWith("# ")){
-			isListStart = i;
-			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
-		}
-		else if(isListStart != -1 && !list.startsWith("#"))
-		{
-			wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx);
-			isListStart = -1;
-		}
-		idx += line.length + 1;
-	}
+    var lines = text.split("\n");
+    var isListStart = -1;
+    var idx = 0;
+    for(var i in lines){
+        var line = lines[i];
+        if( isListStart == -1 && line.startsWith("# ")){
+            isListStart = i;
+            wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
+        }
+        else if(isListStart != -1 && !line.startsWith("#")){
+            wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx - 1);
+            isListStart = -1;
+        }
+        idx += line.length + 1;
+    }
 };
 //////////////////////////////
 function AfterRender(rendered){
     //렌더링 이후에 다 못한 처리를 한다
     var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
-    for(i in rules){
+    for(var i in rules){
         rendered = rendered.replace(rules[i][0], rules[i][1]);
     }
     return rendered;
@@ -902,9 +1066,12 @@ function Parse(text){
 	wikiparser.AddHooker(new BRTagHooker());
 	wikiparser.AddHooker(new DelLineHooker());
     wikiparser.AddHooker(new LinkHooker());
+    wikiparser.AddHooker(new ExtLinkHooker());
     wikiparser.AddHooker(new HeadingHooker());
     wikiparser.AddHooker(new RefHooker());
     wikiparser.AddHooker(new ReferencesHooker());
+    wikiparser.AddHooker(new UnnumberedListHooker());
+    wikiparser.AddHooker(new NumberedListHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
     rendered = a.Render(wikiparser);
