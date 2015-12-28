@@ -37,7 +37,7 @@ NowikiNode.prototype.Process = function(){
 	var stack = [];
 };
 NowikiNode.prototype.Render = function(wikiparser){
-    res = wikiparser.OnlyText(this);
+    var res = wikiparser.OnlyText(this);
     return res.replace(/</gi,"&lt;").replace(/>/gi,"&gt;")
     .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
 };
@@ -73,6 +73,7 @@ LinkNode.prototype.Process = function(){
 };
 LinkNode.prototype.Render = function(wikiparser){
     var res = [];
+    var showText = '';
     res.push('<a href="');
     if(this.children[0].type == "TEXT"){
 		if(this.children[0].text.startsWith("[[")){
@@ -330,30 +331,34 @@ TableNode.prototype.Process = function(){
 	var children = [];
 	var isStartCell = 0;
 	var posPreBar = -1;
+    var i = 0;
 	var j = -1;
+    var t;
+    var temp;
 	if(this.children[0] !== undefined){
 		if(this.children[0].type == "TEXT"){
-			var temp = this.children[0].text;
+			temp = this.children[0].text;
 			temp = temp.substring(2,temp.length);
-			var i = temp.indexOf("\n");
+			i = temp.indexOf("\n");
 			if(i != -1){
 				this.tableattr = temp.substring(0,i);
 				this.children[0].text = temp.substring(i,temp.length);
 			}
 		}
 		if(this.children[this.children.length - 1].type == "TEXT"){
-			var temp = this.children[this.children.length - 1].text;
+			temp = this.children[this.children.length - 1].text;
 			this.children[this.children.length - 1].text = temp.substring(0,temp.length - 2);
 		}
 	}
 	var item = null;
+    var newTextNode;
 	for(i in this.children){
 		var iter = this.children[i];
 		iter.Process();
 
 		if(iter.type == "TEXT"){
 			posPreBar = -1;
-			var temp = iter.text;
+			temp = iter.text;
 //테이블의 셀을 구한다.
 //셀 파싱 규칙은 '|속성|셀 내용\n'이 기본이며, '|셀 내용\n'이나 '||셀 내용'은 변칙일 뿐이다
 			for(j = 0 ; j < temp.length ; j++){
@@ -374,14 +379,14 @@ TableNode.prototype.Process = function(){
 						break;
 						case 1:{
 							isStartCell = 2;
-							var t = temp.substring(posPreBar+1,j);
+							t = temp.substring(posPreBar+1,j);
 							item.attr = t;
 							posPreBar = j;
 						}
 						break;
 						case 2:{
-							var t = temp.substring(posPreBar+1,j);
-							var newTextNode = new TextNode( t);
+							t = temp.substring(posPreBar+1,j);
+							newTextNode = new TextNode(t);
 							item.children.push(newTextNode);
 							res[row].push(item);
 							children.push(newTextNode);
@@ -391,9 +396,9 @@ TableNode.prototype.Process = function(){
 						break;
 					}
 				}
-				else if(temp[j] == '\n' && isStartCell != 0){
-					var t = temp.substring(posPreBar+1,j);
-					var newTextNode = new TextNode(t);
+				else if(temp[j] == '\n' && isStartCell !== 0){
+					t = temp.substring(posPreBar+1,j);
+					newTextNode = new TextNode(t);
 					item.children.push(newTextNode);
 					res[row].push(item);
 					children.push(newTextNode);
@@ -401,9 +406,9 @@ TableNode.prototype.Process = function(){
 					posPreBar = j;
 				}
 			}
-			if(isStartCell != 0){
-				var t = temp.substring(posPreBar+1,temp.length);
-				var newTextNode = new TextNode(t);
+			if(isStartCell !== 0){
+				t = temp.substring(posPreBar+1,temp.length);
+				newTextNode = new TextNode(t);
 				item.children.push(newTextNode);
 				children.push(newTextNode);
 			}
@@ -415,7 +420,7 @@ TableNode.prototype.Process = function(){
 		}
 	}
 	for(i in res){
-		if(res[i].length != 0){
+		if(res[i].length !== 0){
 			this.cells.push(res[i]);
 		}
 	}
@@ -471,6 +476,7 @@ NumberedListNode.prototype.Process = function(){
 NumberedListNode.prototype.Render = function(wikiparser){
     var res = [];
     var stepCount = 0;
+    var nowStepCount = 0;
     var isNewLine = true;
     for(var i in this.children){
         var iter = this.children[i];
@@ -486,7 +492,7 @@ NumberedListNode.prototype.Render = function(wikiparser){
             for(j = 0 ; j < text.length ; j++){
                 if(isNewLine){
                     isNewLine = false;
-                    var nowStepCount = 0;
+                    nowStepCount = 0;
                     for(k = j; k < text.length ; k++){
                         if(text[k] == "#"){
                             nowStepCount++;
@@ -504,7 +510,7 @@ NumberedListNode.prototype.Render = function(wikiparser){
                 }
                 else{
                     if(text[j] == '\n'){
-                        var nowStepCount = 0;
+                        nowStepCount = 0;
                         for(k = j + 1; k < text.length ; k++){
                             if(text[k] == "#"){
                                 nowStepCount++;
@@ -528,8 +534,8 @@ NumberedListNode.prototype.Render = function(wikiparser){
             }
         }
     }
-    if(stepCount != 0){
-        for(;stepCount != 0;stepCount--){
+    if(stepCount !== 0){
+        for(;stepCount !== 0;stepCount--){
             res.push("</li>");
             res.push("</ol>");
         }
@@ -552,6 +558,7 @@ UnnumberedListNode.prototype.Render = function(wikiparser){
 	var res = [];
     var stepCount = 0;
     var isNewLine = true;
+    var nowStepCount = 0;
     for(var i in this.children){
         var iter = this.children[i];
         if(iter.type != "TEXT"){
@@ -566,7 +573,7 @@ UnnumberedListNode.prototype.Render = function(wikiparser){
             for(j = 0 ; j < text.length ; j++){
                 if(isNewLine){
                     isNewLine = false;
-                    var nowStepCount = 0;
+                    nowStepCount = 0;
                     for(k = j; k < text.length ; k++){
                         if(text[k] == "*"){
                             nowStepCount++;
@@ -584,7 +591,7 @@ UnnumberedListNode.prototype.Render = function(wikiparser){
                 }
                 else{
                     if(text[j] == '\n'){
-                        var nowStepCount = 0;
+                        nowStepCount = 0;
                         for(k = j + 1; k < text.length ; k++){
                             if(text[k] == "*"){
                                 nowStepCount++;
@@ -608,8 +615,8 @@ UnnumberedListNode.prototype.Render = function(wikiparser){
             }
         }
     }
-    if(stepCount != 0){
-        for(;stepCount != 0;stepCount--){
+    if(stepCount !== 0){
+        for(;stepCount !== 0;stepCount--){
             res.push("</li>");
             res.push("</ul>");
         }
@@ -630,7 +637,7 @@ LibertyMark.prototype.Render = function(wikiparser){
 	return res.join("");
 };
 LibertyMark.prototype.Process = function(){
-	res = [];
+	var res = [];
 	for(var i in this.children){
 		var iter = this.children[i];
 		iter.Process();
@@ -1073,8 +1080,8 @@ function Parse(text){
     wikiparser.AddHooker(new NumberedListHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
-    rendered = a.Render(wikiparser);
-    res = AfterRender(rendered);
+    var rendered = a.Render(wikiparser);
+    var res = AfterRender(rendered);
     //window.document.getElementById("preview").innerHTML = res;
     return res;
     //for node connect
