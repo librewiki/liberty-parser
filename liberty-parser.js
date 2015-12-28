@@ -528,9 +528,9 @@ LibertyMark.prototype.Process = function(){
   }
 };
 var MARK_TYPE = {
-  STANDALONE:0,
-  OPEN_TAG:1,
-  CLOSE_TAG:2
+  STANDALONE:2,
+  OPEN_TAG:true,
+  CLOSE_TAG:false
 };
 function HookMarker(hooker,markType){
   if(hooker == null) throw "hooker is null!";
@@ -612,10 +612,21 @@ WikiParser.prototype.Parse = function(text){
           throw "parsing error! 짝이 안 맞는다!";
         }
 
-        var lastNode = stack.pop();
+        var lastNode = stack[stack.length - 1];
 //짝이 안맞는 경우도 있을 수 있다
-        if(lastNode.name != iter.marker.hooker.NODE.name){
-//throw "parsing error:incorrect par"
+        var iterNodeName = iter.marker.hooker.NODE.name;
+        if(lastNode.name != iterNodeName){
+//우석 현재 노트와 짝이 맞는 놈을 찾는다.
+          var x = 0;
+          for(x = stack.length - 1 ; x != -1 ; x--){
+            if(stack[x].name == iterNodeName){
+//만약 이름이 같다면 얘일 확률이 크다.
+            }
+          }
+        }
+        else{
+//맞으면 평범하게 빼버린다.
+          stack.pop();
         }
         lastNode.children.push(new TextNode(text.substring(lastIdx, iter.position)));
         //lastNode.Process(lastNode);

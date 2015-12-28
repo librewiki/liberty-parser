@@ -1,0 +1,4 @@
+해당 프로젝트는 MIT License로 배포됩니다.
+The project is published as MIT License.
+
+Author DAMEZUMA, Seontai Kim
