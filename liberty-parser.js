@@ -352,18 +352,17 @@ TableNode.prototype.Process = function(){
   var children = [];
   var isStartCell = 0;
   var posPreBar = -1;
-  var i = 0;
   var j = -1;
-  var t;
+  var i;
   var temp;
-  if(this.children[0] !== undefined){
+  if(this.children[0] !== null){
     if(this.children[0].type == "TEXT"){
       temp = this.children[0].text;
       temp = temp.substring(2,temp.length);
       i = temp.indexOf("\n");
       if(i != -1){
-        this.tableattr = temp.substring(0,i);
-        this.children[0].text = temp.substring(i,temp.length);
+          this.tableattr = temp.substring(0,i);
+          this.children[0].text = temp.substring(i,temp.length);
       }
     }
     if(this.children[this.children.length - 1].type == "TEXT"){
@@ -372,7 +371,6 @@ TableNode.prototype.Process = function(){
     }
   }
   var item = null;
-  var newTextNode;
   for(i in this.children){
     var iter = this.children[i];
     iter.Process();
@@ -380,22 +378,23 @@ TableNode.prototype.Process = function(){
     if(iter.type == "TEXT"){
       posPreBar = -1;
       temp = iter.text;
-      //테이블의 셀을 구한다.
-      //셀 파싱 규칙은 '|속성|셀 내용\n'이 기본이며, '|셀 내용\n'이나 '||셀 내용'은 변칙일 뿐이다
+//테이블의 셀을 구한다.
+//셀 파싱 규칙은 '|속성|셀 내용\n'이 기본이며, '|셀 내용\n'이나 '||셀 내용'은 변칙일 뿐이다
+      var t;
+      var newTextNode;
       for(j = 0 ; j < temp.length ; j++){
         if(temp.substr(j,2) == "|-"){
           res.push([]);
           row++;
           isStartCell = 0;
           posPreBar = -1;
-
         }
         else if(temp[j] == "|"){
           switch(isStartCell){
             case 0:{
               posPreBar = j;
               isStartCell = 1;
-              item = {attr:"",children:[]};
+              item = {attr:"",children:[],isHead:false};
             }
             break;
             case 1:{
@@ -411,11 +410,17 @@ TableNode.prototype.Process = function(){
               item.children.push(newTextNode);
               res[row].push(item);
               children.push(newTextNode);
-              isStartCell = 0;
+              item = {attr:"",children:[],isHead:false};
+              isStartCell = 1;
               posPreBar = j;
             }
             break;
           }
+        }
+        else if(temp[j] == "!" && isStartCell === 0){
+          isStartCell = 1;
+          item = {attr:"",children:[],isHead:true};
+          posPreBar = j;
         }
         else if(temp[j] == '\n' && isStartCell !== 0){
           t = temp.substring(posPreBar+1,j);
@@ -423,6 +428,7 @@ TableNode.prototype.Process = function(){
           item.children.push(newTextNode);
           res[row].push(item);
           children.push(newTextNode);
+
           isStartCell = 0;
           posPreBar = j;
         }
@@ -436,7 +442,6 @@ TableNode.prototype.Process = function(){
     }
     else{
       item.children.push(iter);
-
       children.push(iter);
     }
   }
@@ -457,10 +462,18 @@ TableNode.prototype.Render = function(wikiparser){
     res.push("<tr>");
     for(var j in row){
       var cell = row[j];
-      res.push("<td ");
+
+      res.push("<");
+      if(cell.isHead){
+        res.push("th ");
+      }
+      else{
+        res.push("td ");
+      }
       res.push(cell.attr);
       res.push(">");
-      for(var k in cell.children){
+      for(var k in cell.children)
+      {
         var iter = cell.children[k];
         res.push(iter.Render(wikiparser));
       }
@@ -471,7 +484,6 @@ TableNode.prototype.Render = function(wikiparser){
   res.push("</table>");
   return res.join("");
 };
-//////////////////////////////
 function TemplateNode(hooker){
   this.NAME = "TEMPLATE";
   this.children = [];
