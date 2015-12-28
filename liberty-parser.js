@@ -702,6 +702,9 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
 		}
 		else{
+			if(text.substr(idx,5) == "'''''"){
+				idx+=2;
+			}
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
 		}
 		isStartTag = !isStartTag;
@@ -717,16 +720,21 @@ ItalicHooker.prototype.DoMark = function(wikiparser,text){
 	var idx = 0;
 	var isStartTag = false;
 	while((idx = text.indexOf("''", idx)) != -1){
-        if(text.charAt(idx+2)=="'"){
-            idx += 3;
-            continue;
-        }
-		var tagType = MARK_TYPE.OPEN_TAG;
 		if(!isStartTag){
+			if(text.substr(idx,5) == "'''''"){
+				idx+=3;
+			}
+			else if(text.substr(idx,3) == "'''"){
+				idx += 2;
+				continue;
+			}
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
 		}
 		else{
 			wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 2);
+			if(text.substr(idx,5) == "'''''"){
+				idx += 3;
+			}
 		}
 		isStartTag = !isStartTag;
 		idx += 2;
