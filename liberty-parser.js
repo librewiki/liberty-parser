@@ -85,6 +85,9 @@ LinkNode.prototype.Process = function(){
 LinkNode.prototype.Render = function(wikiparser){
   var res = [];
   var showText = '';
+  if(this.children[0].text.startsWith("[[파일:")){
+    return this.FileRender(wikiparser);
+  }
   res.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/');
   if(this.children[0].type == "TEXT"){
     if(this.children[0].text.startsWith("[[")){
@@ -112,7 +115,29 @@ LinkNode.prototype.Render = function(wikiparser){
   res.push('</a>');
   return res.join("");
 };
-
+LinkNode.prototype.FileRender = function (first_argument) {
+  //처리할게 더 있긴 한데 귀찮다
+  var res = [];
+  var imgFolder = "https://librewiki.net/images/5/5e/";
+  var data = this.children[0].text.substring(2,this.children[0].text.length - 2).split('|');
+  var len = data.length;
+  res.push('<img ');
+  for(var i = 1;i<len;i++){
+    if((/^\d.*/).test(data[i])){
+      res.push('width="');
+      res.push(data[i]);
+      var unit = data[i].match(/\D+/)[0];
+      if(unit.trim()=="픽셀") unit = "px";
+      res.push(unit);
+      res.push('"');
+    }
+  }
+  res.push('src="');
+  res.push(imgFolder);
+  res.push(data[0].substr(3).replace(/ /g,"_"));
+  res.push('" />');
+  return(res.join(""));
+};
 
 function ExtLinkNode(){
   this.type = "EXTERNAL LINK";
