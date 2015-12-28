@@ -1,6 +1,6 @@
 "USE STRICT";
-//*EDITING BY DAMEZUMA
-//*author DAMEZUMA
+//*EDITING BY DAMEZUMA, NESSUN
+//*author DAMEZUMA, NESSUN
 //publish by MIT
 //각 클래스 메소드 별 역할
 //Render() -> 노드를 HTML로 변환한다.
@@ -50,7 +50,18 @@ TextNode.prototype.Process = function(wikiparser){
 
 };
 TextNode.prototype.Render = function(wikiparser){
-  return this.text;
+  var res = [];
+  var texts = this.text.split(" ");
+  for (var i in texts){
+    if(texts[i].startsWith("http://")||texts[i].startsWith("https://")){
+      res.push('<a style="color:#008000;" href="');
+      res.push(texts[i]);
+      res.push('">');
+      res.push(texts[i]);
+      res.push('</a>');
+    }else res.push(texts[i]);
+  }
+  return res.join(' ');
 };
 //////////////////////////////
 function BRNode(){
@@ -111,7 +122,25 @@ ExtLinkNode.prototype.Process = function(){
 
 };
 ExtLinkNode.prototype.Render = function(wikiparser){
-  return "EXTERNAL LINK";
+  var res = [];
+  var oriText = wikiparser.OnlyText(this);
+  var innerText = oriText.substring(1, oriText.length -1);
+  var innerParsed = innerText.split(' ');
+  var linkText = innerParsed[0];
+  if(innerParsed[1]===undefined){
+    showText = '['+(++wikiparser.linkNum)+']';
+  }
+  else{
+    showText = innerParsed.slice(1).join(" ");
+  }
+  if(linkText.startsWith("http://")||linkText.startsWith("https://")){
+    res.push('<a style="color:#008000;" href="');
+    res.push('linktext');
+    res.push('">');
+    res.push(showText);
+    res.push('</a>');
+    return res.join("");
+  }else return oriText;
 };
 //////////////////////////////
 function RefNode(){
@@ -591,6 +620,7 @@ function WikiParser(){
   this.headingMin = 100;
   this.referNaming = []; //[name, num]을 저장
   this.referNum = 0;
+  this.linkNum = 0;
 }
 WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
