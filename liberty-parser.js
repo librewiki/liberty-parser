@@ -315,39 +315,6 @@ ItalicNode.prototype.Render = function(wikiparser){
   return res.join("");
 };
 //////////////////////////////
-function DelTagNode(){
-  this.type = "DEL";
-  this.children = [];
-}
-DelTagNode.prototype.Process = function(){
-  for(var i in this.children){
-    var it = this.children[i];
-    it.Process();
-  }
-};
-DelTagNode.prototype.Render = function(wikiparser){
-  var res = [];
-  if(this.children[0].type == "TEXT"){
-    if(this.children[0].text.startsWith("--")){
-      this.children[0].text = this.children[0].text.substr(2);
-    }
-  }
-  if(this.children[this.children.length - 1].type == "TEXT"){
-    var t = this.children[this.children.length - 1].text;
-    if(t.endsWith("--")){
-      t = t.substring(0, t.length -2);
-      this.children[this.children.length - 1].text = t;
-    }
-  }
-  res.push("<s>");
-  for(var i in this.children){
-    var it = this.children[i];
-    res.push(it.Render(wikiparser));
-  }
-  res.push("</s>");
-  return res.join("");
-};
-//////////////////////////////
 function TableNode(){
   this.NAME = "TABLE";
   this.children = [];
@@ -944,25 +911,6 @@ ExtLinkHooker.prototype.DoMark = function(wikiparser,text){
   }
 };
 //////////////////////////////
-function DelLineHooker(){
-  this.NAME = "DELTAG HOOKER";
-  this.NODE = DelTagNode;
-}
-DelLineHooker.prototype.DoMark = function(wikiparser,text){
-  var idx = 0;
-  var isStartTag = false;
-  while((idx = text.indexOf("--", idx)) != -1){
-    var tagType = MARK_TYPE.OPEN_TAG;
-    if(!isStartTag){
-      wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
-    }
-    else{
-      wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 2);
-    }
-    isStartTag = !isStartTag;
-    idx += 2;
-  }
-};
 function ListHooker(){
   this.NAME = "LIST HOOKER";
   this.NODE = ListNode;
@@ -1006,7 +954,6 @@ function Parse(text){
   wikiparser.AddHooker(new BoldTagHooker());
   wikiparser.AddHooker(new ItalicHooker());
   wikiparser.AddHooker(new BRTagHooker());
-  wikiparser.AddHooker(new DelLineHooker());
   wikiparser.AddHooker(new LinkHooker());
   wikiparser.AddHooker(new ExtLinkHooker());
   wikiparser.AddHooker(new HeadingHooker());
