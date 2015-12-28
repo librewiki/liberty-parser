@@ -4,7 +4,7 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<script type="text/javascript" src="./liberty-parser.js"></script>
 		<title>Untitled Document</title>
-	<link href="wiky.css" rel="stylesheet" type="text/css">
+	
     <script>
         var wikitext = "";
     </script>
@@ -17,5 +17,6 @@
 			<span style="display:block;margin:10px 10px 10px 10px;" class="wiky_preview_area" id="preview">
 			</span>
 		</span>
+        <button onclick="document.all['preview'].innerHTML = Parse(document.all['textarea'].value)">파싱 테스트</button>
 	</body>
 </html>
