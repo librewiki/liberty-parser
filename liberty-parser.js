@@ -716,6 +716,7 @@ WikiParser.prototype.Parse = function(text){
 				stack.push(node);
 			break;
 			case MARK_TYPE.STANDALONE:
+                stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
 				stack[stack.length - 1].children.push(new iter.marker.hooker.NODE());
 			break;
 		}
