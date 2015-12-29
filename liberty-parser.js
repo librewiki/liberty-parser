@@ -617,6 +617,7 @@ WikiParser.prototype.ReverseTagType = function(text, fromIdx, nodeClass){
         this.markList[k] = marker.hooker.OnTagReversing(this.markList, text, marker.markType, marker.position);
         if(this.markList[k] == null){
           this.markList.splice(k);
+          k--;
         }
       }
     }
