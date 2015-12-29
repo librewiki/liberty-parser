@@ -620,6 +620,10 @@ WikiParser.prototype.ReverseTagType = function(text, fromIdx, nodeClass){
           k--;
         }
       }
+      else{
+        this.markList.splice(k);
+        k--;
+      }
     }
   }
 };
@@ -666,7 +670,6 @@ WikiParser.prototype.Parse = function(text){
               iter = this.markList[markStack[k].pos];//iter도 돌려놓고
               stack[x].children = [];//자식을 비우고...
               stack = stack.slice(0,x+1)//스택도 날리고
-              
               break;
             }
           }
