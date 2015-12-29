@@ -544,11 +544,12 @@ var MARK_TYPE = {
   OPEN_TAG:true,
   CLOSE_TAG:false
 };
-function HookMarker(hooker,markType){
+function HookMarker(hooker,markType,pos){
   if(hooker == null) throw "hooker is null!";
   if(markType == null) throw "mark type is null!";
   this.hooker = hooker;
   this.markType = markType;
+  this.position = pos;
   this.NAME = "HOOK MARKER";
 }
 function WikiParser(){
@@ -562,32 +563,31 @@ function WikiParser(){
 WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
 };
-WikiParser.prototype.AddMark = function(marker,position){
+WikiParser.prototype.AddMark = function(marker){
   var isDoneInsert = false;
-  var item = {marker:marker,position:position};
   for(i in this.markList){
   var iter = this.markList[i];
-  if(iter.position > position){
-    this.markList.splice(i,0,item);
+  if(iter.position > marker.position){
+    this.markList.splice(i,0,marker);
     isDoneInsert = true;
     break;
   }
   }
   if(isDoneInsert == false){
-    this.markList.push(item);
+    this.markList.push(marker);
   }
 };
 WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
   var idx = 0;
   var len = tagName.length;
   while((idx = text.indexOf("<"+tagName+">", idx)) != -1){
-  this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG),idx);
+  this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG,idx));
   idx += len+2;
   }
   idx = 0;
   while((idx = text.indexOf("</"+tagName+">", idx)) != -1){
   idx += len+3;
-  this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG),idx);
+  this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG,idx));
   }
 };
 WikiParser.prototype.OnlyText = function(node){
@@ -606,18 +606,21 @@ WikiParser.prototype.OnlyText = function(node){
   recursion(node);
   return res.join("");
 }
-WikiParser.prototype.ReverseTagType = function(fromIdx, nodeClass){
+WikiParser.prototype.ReverseTagType = function(text, fromIdx, nodeClass){
   var k = 0;
-  for(k = fromIdx ; k < this.markList ; k++){
-    var nodeClass = this.markList[k].marker.hooker.NODE;
-    var tagType = this.markList[k].marker.markType;
-    if(nodeClass == nodeType && tagType != MARK_TYPE.STANDALONE){
-      this.markList[k].marker.markType = !this.markList[k].marker.markType;
+  for(k = fromIdx ; k < this.markList.length ; k++){
+    var iterNodeClass = this.markList[k].hooker.NODE;
+    var tagType = this.markList[k].markType;
+    if(nodeClass == iterNodeClass && tagType != MARK_TYPE.STANDALONE){
+      var marker = this.markList[k];
+      if(marker.hooker.OnTagReversing != null){
+        this.markList[k] = marker.hooker.OnTagReversing(this.markList, text, marker.markType, marker.position);
+        if(this.markList[k] == null){
+          this.markList.splice(k);
+        }
+      }
     }
   }
-};
-WikiParser.prototype.MakeTree = function(){
-  
 };
 WikiParser.prototype.Parse = function(text){
   //여기로 위키텍스트 들어간다
@@ -634,7 +637,7 @@ WikiParser.prototype.Parse = function(text){
   stack.push(new LibertyMark());//마크 담는 스택
   for(i = 0 ; i < this.markList.length ; i++){
   var iter = this.markList[i];
-  switch(iter.marker.markType){
+  switch(iter.markType){
     case MARK_TYPE.CLOSE_TAG:{
     if(stack.length == 1){
       throw "parsing error! 짝이 안 맞는다!";
@@ -642,7 +645,7 @@ WikiParser.prototype.Parse = function(text){
 
     var lastNode = stack[stack.length - 1];
 //짝이 안맞는 경우도 있을 수 있다
-    var iterNodeName = iter.marker.hooker.NODE;
+    var iterNodeName = iter.hooker.NODE;
     if(lastNode.constructor != iterNodeName){
       //우석 현재 노트와 짝이 맞는 놈을 찾는다.
       var x = 0;
@@ -653,18 +656,19 @@ WikiParser.prototype.Parse = function(text){
           //그리고 스택을 비우고 다시 차일드를 쳐넣는다...
           var k = 0;
           for(k = x+1 ; k < stack.length ; k++){
-            this.ReverseTagType(i + 1, stack[k].constructor);
+            this.ReverseTagType(text, i + 1, stack[k].constructor);
           }
-          for(k in markStack){
+          for(k = markStack.length - 1; k >= 0; k--){
             if(markStack[k].node == stack[x]){
+              this.markList.splice(k+1, i - (k + 1));//k초과, i미만인 요소들의 노드를 제거한다. 필연이다.
+              i = markStack[k].pos;//마크 돌리던 것도 돌리고
+              iter = this.markList[markStack[k].pos];//iter도 돌려놓고
               stack[x].children = [];//자식을 비우고...
               stack = stack.slice(0,x+1)//스택도 날리고
-              i = markStack[k].pos - 1;//마크 돌리던 것도 돌리고
-              iter = markList[markStack[k].pos - 1];//iter도 돌려놓고
-
+              
+              break;
             }
           }
-          
           break;
         }
       }
@@ -673,13 +677,14 @@ WikiParser.prototype.Parse = function(text){
 //맞으면 평범하게 빼버린다.
       stack.pop();
       markStack.pop();
+      lastNode.children.push(new TextNode(text.substring(lastIdx, iter.position)));
     }
-    lastNode.children.push(new TextNode(text.substring(lastIdx, iter.position)));
+    
     }
     break;
     case MARK_TYPE.OPEN_TAG:{
       stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
-      var node = new iter.marker.hooker.NODE();
+      var node = new iter.hooker.NODE();
       stack[stack.length - 1].children.push(node);
       stack.push(node);
       markStack.push({node:node,pos:i});
@@ -714,13 +719,13 @@ function TemplateHooker(){
 TemplateHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   while((idx = text.indexOf("{{", idx)) != -1){
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
   idx += 2;
   }
   idx = 0;
   while((idx = text.indexOf("}}", idx)) != -1){
   idx += 2;
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
   }
 };
 //////////////////////////////
@@ -739,13 +744,13 @@ TableHooker.prototype.GetEndStrLen = function(text)
 TableHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   while((idx = text.indexOf("{|", idx)) != -1){
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
   idx += 2;
   }
   idx = 0;
   while((idx = text.indexOf("|}", idx)) != -1){
   idx += 2;
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
   }
 };
 //////////////////////////////
@@ -759,7 +764,7 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
   while((idx = text.indexOf("'''", idx)) != -1){
   var tagType = MARK_TYPE.OPEN_TAG;
   if(!isStartTag){
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
     if(text.substr(idx,5) == "'''''"){
     idx+=2;
     }
@@ -768,11 +773,21 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
     if(text.substr(idx,5) == "'''''"){
     idx+=2;
     }
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 3);
+    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx + 3));
   }
   isStartTag = !isStartTag;
   idx += 3;
   }
+};
+BoldTagHooker.prototype.OnTagReversing = function(markList,text,tagType,idx){
+  var res = null;
+  if(tagType == MARK_TYPE.OPEN_TAG){
+    res = new HookMarker(this,MARK_TYPE.CLOSE_TAG,idx+3);
+  }
+  else{
+    res = new HookMarker(this,MARK_TYPE.OPEN_TAG,idx-3);
+  }
+  return res;
 };
 //////////////////////////////
 function ItalicHooker(){
@@ -791,10 +806,10 @@ ItalicHooker.prototype.DoMark = function(wikiparser,text){
     idx += 2;
     continue;
     }
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
   }
   else{
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 2);
+    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx + 2));
     if(text.substr(idx,5) == "'''''"){
     idx += 3;
     }
@@ -802,6 +817,16 @@ ItalicHooker.prototype.DoMark = function(wikiparser,text){
   isStartTag = !isStartTag;
   idx += 2;
   }
+};
+ItalicHooker.prototype.OnTagReversing = function(markList,text,tagType,idx){
+  var res = null;
+  if(tagType == MARK_TYPE.OPEN_TAG){
+    res = new HookMarker(this,MARK_TYPE.CLOSE_TAG,idx+2);
+  }
+  else{
+    res = new HookMarker(this,MARK_TYPE.OPEN_TAG,idx-2);
+  }
+  return res;
 };
 //////////////////////////////
 function HeadingHooker(){
@@ -827,9 +852,9 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
     break;
     }
   }
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx+compen);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx+compen));
   idx = text.indexOf("=", idx2);
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx+compen+level);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx+compen+level));
   idx += level;
   wikiparser.headingQue.push(level);
   wikiparser.headingQueFront++;
@@ -844,7 +869,7 @@ BRTagHooker.prototype.DoMark = function(wikiparser,text){
   var idx = 0;
   while((idx = text.indexOf("\n\n", idx)) != -1){
   var tagType = MARK_TYPE.OPEN_TAG;
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.STANDALONE),idx+1);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.STANDALONE,idx+1));
   idx += 2;
   }
 };
@@ -857,13 +882,13 @@ function LinkHooker(){
 LinkHooker.prototype.DoMark = function(wikiparser,text){
   var idx = 0;
   while((idx = text.indexOf("[[", idx)) != -1){
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
     idx += 2;
   }
   idx = 0;
   while((idx = text.indexOf("]]", idx)) != -1){
   idx += 2;
-  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx);
+  wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
   }
 };
 //////////////////////////////
@@ -876,10 +901,10 @@ DelLineHooker.prototype.DoMark = function(wikiparser,text){
   var isStartTag = false;
   while((idx = text.indexOf("--", idx)) != -1){
   if(!isStartTag){
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG),idx);
+    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
   }
   else{
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG),idx + 2);
+    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx + 2));
   }
   isStartTag = !isStartTag;
   idx += 2;
@@ -902,10 +927,10 @@ ListHooker.prototype.DoMark = function(wikiparser, text){
   var line = lines[i];
   if( isListStart == -1 && (line.startsWith("*") || line.startsWith("#"))){
     isListStart = i;
-    wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
+    wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG, idx));
   }
   else if(isListStart != -1 && !(line.startsWith("*") || line.startsWith("#"))){
-    wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx - 1);
+    wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG, idx - 1));
     isListStart = -1;
   }
   idx += line.length + 1;
