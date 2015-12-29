@@ -606,17 +606,33 @@ WikiParser.prototype.OnlyText = function(node){
   recursion(node);
   return res.join("");
 }
+WikiParser.prototype.ReverseTagType = function(fromIdx, nodeClass){
+  var k = 0;
+  for(k = fromIdx ; k < this.markList ; k++){
+    var nodeClass = this.markList[k].marker.hooker.NODE;
+    var tagType = this.markList[k].marker.markType;
+    if(nodeClass == nodeType && tagType != MARK_TYPE.STANDALONE){
+      this.markList[k].marker.markType = !this.markList[k].marker.markType;
+    }
+  }
+};
+WikiParser.prototype.MakeTree = function(){
+  
+};
 WikiParser.prototype.Parse = function(text){
   //여기로 위키텍스트 들어간다
+  var i = 0;
   for(i in this.hookers){
   //후커 돌면서 DoMark 실행
   var hooker = this.hookers[i];
   hooker.DoMark(this,text);
   }
   var stack = [];
+  var markStack = [];
+  
   var lastIdx = 0;
   stack.push(new LibertyMark());//마크 담는 스택
-  for(i in this.markList){
+  for(i = 0 ; i < this.markList.length ; i++){
   var iter = this.markList[i];
   switch(iter.marker.markType){
     case MARK_TYPE.CLOSE_TAG:{
@@ -627,38 +643,47 @@ WikiParser.prototype.Parse = function(text){
     var lastNode = stack[stack.length - 1];
 //짝이 안맞는 경우도 있을 수 있다
     var iterNodeName = iter.marker.hooker.NODE;
-    if(lastNode.constructor != null){
-      if(lastNode.constructor != iterNodeName){
-        //우석 현재 노트와 짝이 맞는 놈을 찾는다.
-        var x = 0;
-        for(x = stack.length - 1 ; x != -1 ; x--){
-          if(stack[x].constructor == iterNodeName){
-        //만약 이름이 같다면 얘일 확률이 크다.
+    if(lastNode.constructor != iterNodeName){
+      //우석 현재 노트와 짝이 맞는 놈을 찾는다.
+      var x = 0;
+      for(x = stack.length - 1 ; x != -1 ; x--){
+        if(stack[x].constructor == iterNodeName){
+          //만약 이름이 같다면 얘일 확률이 크다.
+          //얘 위에 쓰여진 스택들을 비워버린다.
+          //그리고 스택을 비우고 다시 차일드를 쳐넣는다...
+          var k = 0;
+          for(k = x+1 ; k < stack.length ; k++){
+            this.ReverseTagType(i + 1, stack[k].constructor);
           }
+          for(k in markStack){
+            if(markStack[k].node == stack[x]){
+              stack[x].children = [];//자식을 비우고...
+              stack = stack.slice(0,x+1)//스택도 날리고
+              i = markStack[k].pos - 1;//마크 돌리던 것도 돌리고
+              iter = markList[markStack[k].pos - 1];//iter도 돌려놓고
+
+            }
+          }
+          
+          break;
         }
-      }
-      else{
-//맞으면 평범하게 빼버린다.
-        stack.pop();
       }
     }
     else{
 //맞으면 평범하게 빼버린다.
       stack.pop();
+      markStack.pop();
     }
-    if(lastNode.name != iterNodeName){
-
-    }
-    
     lastNode.children.push(new TextNode(text.substring(lastIdx, iter.position)));
-    //lastNode.Process(lastNode);
     }
     break;
-    case MARK_TYPE.OPEN_TAG:
-    stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
-    var node = new iter.marker.hooker.NODE();
-    stack[stack.length - 1].children.push(node);
-    stack.push(node);
+    case MARK_TYPE.OPEN_TAG:{
+      stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
+      var node = new iter.marker.hooker.NODE();
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+      markStack.push({node:node,pos:i});
+    }
     break;
     case MARK_TYPE.STANDALONE:
     stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
@@ -889,6 +914,9 @@ ListHooker.prototype.DoMark = function(wikiparser, text){
 //////////////////////////////
 function Parse(text){
   var wikiparser = new WikiParser();
+  if(wikiparser.constructor == null){
+    throw "The javascript interpreter is not support dameparser! it have to support constructor property";
+  }
   wikiparser.AddHooker(new NowikiHooker());
   wikiparser.AddHooker(new TemplateHooker());
   wikiparser.AddHooker(new TableHooker());
