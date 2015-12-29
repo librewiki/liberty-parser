@@ -116,26 +116,35 @@ LinkNode.prototype.Render = function(wikiparser){
   return res.join("");
 };
 LinkNode.prototype.FileRender = function (first_argument) {
-  //처리할게 더 있긴 한데 귀찮다
   var res = [];
-  var imgFolder = "https://librewiki.net/images/5/5e/";
+  var imgFolder = "//librewiki.net/images/5/5e/";
+  var imglink = "//librewiki.net/wiki/";
   var data = this.children[0].text.substring(2,this.children[0].text.length - 2).split('|');
   var len = data.length;
-  res.push('<img ');
+  res.push('<a class="image" href="');
+  res.push(imglink);
+  res.push(data[0]);
+  res.push('"><img ');
   for(var i = 1;i<len;i++){
     if((/^\d.*/).test(data[i])){
       res.push('width="');
-      res.push(data[i]);
+      res.push(data[i].match(/\d+/)[0]);
       var unit = data[i].match(/\D+/)[0];
       if(unit.trim()=="픽셀") unit = "px";
       res.push(unit);
-      res.push('"');
+      res.push('" ');
+    }
+    else if(data[i].trim()=="섬네일"){
+      res.push('class="thumbimage" ');
+    }
+    else if(data[i].trim()=="왼쪽"){
+      //왼쪽오른쪽 넣어주긴 해야 하는데
     }
   }
   res.push('src="');
   res.push(imgFolder);
   res.push(data[0].substr(3).replace(/ /g,"_"));
-  res.push('" />');
+  res.push('" /></a>');
   return(res.join(""));
 };
 
@@ -160,7 +169,7 @@ ExtLinkNode.prototype.Render = function(wikiparser){
   }
   if(linkText.startsWith("http://")||linkText.startsWith("https://")){
     res.push('<a style="color:#008000;" href="');
-    res.push('linktext');
+    res.push(linkText);
     res.push('">');
     res.push(showText);
     res.push('</a>');
@@ -261,8 +270,13 @@ HeadingNode.prototype.Render = function(wikiparser){
   }
   wikiparser.headingQueCurr++;
   res.push("<h"+curLv+'><a href="#toc">');
-  res.push(wikiparser.headingNumbering.join(".").replace(/.0/gi,""));
-  res.push(".</a> ");
+  for(var k in wikiparser.headingNumbering){
+    if(wikiparser.headingNumbering[k]!==0){
+      res.push(wikiparser.headingNumbering[k]);
+      res.push('.');
+    }
+  }
+  res.push("</a> ");
   var res2 = [];
   for(var i in this.children){
     var it = this.children[i];
