@@ -584,6 +584,16 @@ ListNode.prototype.Render = function(wikiparser){
   }
   return res.join("");
 };
+function HRNode(){
+  this.children = [];
+  this.NAME = "HR";
+}
+HRNode.prototype.Process = function(){
+
+};
+HRNode.prototype.Render = function(wikiparser){
+  return "<hr />";
+};
 //////////////////////////////
 function LibertyMark(){
   this.children = [];
@@ -974,6 +984,26 @@ ListHooker.prototype.DoMark = function(wikiparser, text){
   }
 };
 //////////////////////////////
+function HRHooker(){
+  this.NAME = "HR HOOKER";
+  this.NODE = HRNode;
+}
+HRHooker.prototype.DoMark = function(wikiparser, text){
+  if(text.endsWith("\n") === false){
+    text = text.concat("\n");
+  }
+  var lines = text.split("\n");
+  var idx = 0;
+  for(var i in lines){
+    var line = lines[i];
+    if(line.startsWith("----")){
+      wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG), idx);
+      wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG), idx + line.length);
+    }
+    idx += line.length + 1;
+  }
+};
+//////////////////////////////
 function AfterRender(rendered){
   //렌더링 이후에 다 못한 처리를 한다
   var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
@@ -997,6 +1027,7 @@ function Parse(text){
   wikiparser.AddHooker(new RefHooker());
   wikiparser.AddHooker(new ReferencesHooker());
   wikiparser.AddHooker(new ListHooker());
+  wikiparser.AddHooker(new HRHooker());
   //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
