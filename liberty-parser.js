@@ -645,7 +645,8 @@ WikiParser.prototype.Parse = function(text){
   switch(iter.markType){
     case MARK_TYPE.CLOSE_TAG:{
     if(stack.length == 1){
-      throw "parsing error! 짝이 안 맞는다!";
+      //throw "parsing error! 짝이 안 맞는다!";
+      continue;
     }
 
     var lastNode = stack[stack.length - 1];
@@ -737,14 +738,6 @@ function TableHooker(){
   this.NAME = "TABLE HOOKER";
   this.NODE = TableNode;
 }
-TableHooker.prototype.GetStartStrLen = function(text)
-{
-  return 2;
-};
-TableHooker.prototype.GetEndStrLen = function(text)
-{
-  return 2;
-};
 TableHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   while((idx = text.indexOf("{|", idx)) != -1){
