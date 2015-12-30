@@ -33,6 +33,19 @@ function NowikiNode(){
   this.type = "NOWIKI";
   this.children = [];
 }
+function PreTagNode() {
+	this.type = "PRETAG";
+	this.children = [];
+}
+PreTagNode.prototype.Process = function () {
+	var stack = [];
+};
+PreTagNode.prototype.Render = function (wikiparser) {
+  console.log(this);
+	res = wikiparser.OnlyText(this);
+	return res.replace(/</gi, "&lt;").replace(/>/gi, "&gt;")
+	.replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>");
+};
 NowikiNode.prototype.Process = function(){
   var stack = [];
 };
@@ -750,9 +763,15 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
   var lower = text.toLowerCase();
   var idx = 0;
   var len = tagName.length;
+  var stdAlone = /^<([-A-Za-z0-9_]+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*\/>/;
   while((idx = lower.indexOf("<"+tagName+" ", idx)) != -1){
+    var temp = idx;
     this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG,idx));
     idx = lower.indexOf(">", idx);
+    console.log(lower.substring(temp,idx+1));
+    if(stdAlone.test(lower.substring(temp,idx+1))){
+      this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG,idx+1));
+    }
   }
   idx = 0;
   while((idx = lower.indexOf("<"+tagName+">", idx)) != -1){
@@ -763,11 +782,7 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
   while((idx = lower.indexOf("</"+tagName, idx)) != -1){
     idx = lower.indexOf(">", idx);
     this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG,idx+1));
-  }/*
-  while((idx = lower.indexOf("<"+tagName+" />", idx)) != -1){
-    idx = lower.indexOf(">", idx);
-    this.AddMark(new HookMarker(hooker, MARK_TYPE.STANDALONE,idx+1));
-  }*/
+  }
 };
 WikiParser.prototype.DoBasicMarkStandaloneTag = function(text,hooker,tagName){
   var lower = text.toLowerCase();
@@ -897,7 +912,6 @@ WikiParser.prototype.Parse = function(text){
       }
       break;
       case MARK_TYPE.STANDALONE:
-      console.log(this);
       stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
       stack[stack.length - 1].children.push(new iter.hooker.NODE());
       break;
@@ -1170,6 +1184,14 @@ HRHooker.prototype.DoMark = function(wikiparser, text){
     idx += line.length + 1;
   }
 };
+function PreTagHooker(){
+ 	this.NAME = "PRETAG HOOKER";
+	this.NODE = PreTagNode;
+}
+PreTagHooker.prototype.DoMark = function (wikiparser, text) {
+	wikiparser.DoBasicMarkTag(text, this, "pre");
+};
+
 //////////////////////////////
 function AfterRender(rendered){
   //렌더링 이후에 다 못한 처리를 한다
@@ -1192,6 +1214,7 @@ function Parse(text){
     throw "The javascript interpreter is not support dameparser! it have to support constructor property";
   }
   wikiparser.AddHooker(new NowikiHooker());
+  wikiparser.AddHooker(new PreTagHooker());
   wikiparser.AddHooker(new TemplateHooker());
   wikiparser.AddHooker(new TableHooker());
   wikiparser.AddHooker(new BoldTagHooker());
