@@ -41,7 +41,6 @@ PreTagNode.prototype.Process = function () {
 	var stack = [];
 };
 PreTagNode.prototype.Render = function (wikiparser) {
-  console.log(this);
 	res = wikiparser.OnlyText(this);
 	return res.replace(/</gi, "&lt;").replace(/>/gi, "&gt;")
 	.replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>");
@@ -64,14 +63,25 @@ TextNode.prototype.Process = function(wikiparser){
 };
 TextNode.prototype.Render = function(wikiparser){
   var res = [];
+  var isbn = /\d{3}-\d-\d{8}-\d|\d{2}-\d{3}-\d{4}-\d/;
   var texts = this.text.split(" ");
-  for (var i in texts){
+  for (var i=0;i<texts.length;i++){
     if(texts[i].startsWith("http://")||texts[i].startsWith("https://")){
       res.push('<a style="color:#008000;" href="');
       res.push(texts[i]);
       res.push('">');
       res.push(texts[i]);
       res.push('</a>');
+    }else if(texts[i]=="ISBN"&&i<texts.length-1){
+      if(isbn.test(texts[i+1])){
+        res.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/특수:책찾기/');
+        console.log(texts[i+1]);
+        res.push(texts[i+1]);
+        res.push('">ISBN ');
+        res.push(texts[i+1]);
+        res.push('</a>');
+        i++;
+      }
     }else res.push(texts[i]);
   }
   return res.join(' ');
@@ -768,7 +778,6 @@ WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
     var temp = idx;
     this.AddMark(new HookMarker(hooker, MARK_TYPE.OPEN_TAG,idx));
     idx = lower.indexOf(">", idx);
-    console.log(lower.substring(temp,idx+1));
     if(stdAlone.test(lower.substring(temp,idx+1))){
       this.AddMark(new HookMarker(hooker, MARK_TYPE.CLOSE_TAG,idx+1));
     }
