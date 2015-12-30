@@ -695,13 +695,13 @@ LibertyMark.prototype.Process = function(){
   }
 };
 var MARK_TYPE = {
-  STANDALONE:"STANDALONE",
-  OPEN_TAG:"OPEN",
-  CLOSE_TAG:"CLOSE"
+  STANDALONE:2,
+  OPEN_TAG:true,
+  CLOSE_TAG:false
 };
 function HookMarker(hooker,markType,pos){
-  if(hooker === undefined) throw "hooker is undefined!";
-  if(markType === undefined) throw "mark type is undefined!";
+  if(isNull(hooker)) throw "hooker is undefined!";
+  if(isNull(markType)) throw "mark type is undefined!";
   this.hooker = hooker;
   this.markType = markType;
   this.position = pos;
@@ -926,14 +926,6 @@ function TableHooker(){
   this.NAME = "TABLE HOOKER";
   this.NODE = TableNode;
 }
-TableHooker.prototype.GetStartStrLen = function(text)
-{
-  return 2;
-};
-TableHooker.prototype.GetEndStrLen = function(text)
-{
-  return 2;
-};
 TableHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   while((idx = text.indexOf("{|", idx)) != -1){
@@ -958,6 +950,9 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
     var tagType = MARK_TYPE.OPEN_TAG;
     if(!isStartTag){
       wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
+      if(text.substr(idx,5) == "'''''"){
+        idx+=2;
+      }
     }
     else{
       if(text.substr(idx,5) == "'''''"){
@@ -968,6 +963,16 @@ BoldTagHooker.prototype.DoMark = function(wikiparser,text){
     isStartTag = !isStartTag;
     idx += 3;
   }
+};
+BoldTagHooker.prototype.OnTagReversing = function(markList,text,tagType,idx){
+  var res = null;
+  if(tagType == MARK_TYPE.OPEN_TAG){
+    res = new HookMarker(this,MARK_TYPE.CLOSE_TAG,idx+3);
+  }
+  else{
+    res = new HookMarker(this,MARK_TYPE.OPEN_TAG,idx-3);
+  }
+  return res;
 };
 //////////////////////////////
 function ItalicHooker(){
