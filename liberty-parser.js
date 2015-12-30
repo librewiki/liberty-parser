@@ -32,6 +32,20 @@ pos를 기준으로 정렬시킵니다.
 function IsNull(obj) {
 	return obj === null || obj === undefined;
 }
+
+function PreTagNode() {
+	this.type = "PRETAG";
+	this.children = [];
+}
+PreTagNode.prototype.Process = function () {
+	var stack = [];
+};
+PreTagNode.prototype.Render = function (wikiparser) {
+	res = wikiparser.OnlyText(this);
+	return res.replace(/</gi, "&lt;").replace(/>/gi, "&gt;")
+	.replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>");
+};
+
 function NowikiNode() {
 	this.type = "NOWIKI";
 	this.children = [];
@@ -1113,6 +1127,15 @@ ListHooker.prototype.DoMark = function (wikiparser, text) {
 		idx += line.length + 1;
 	}
 };
+
+function PreTagHooker(){
+ 	this.NAME = "PRETAG HOOKER";
+	this.NODE = PreTagNode;
+}
+PreTagHooker.prototype.DoMark = function (wikiparser, text) {
+	wikiparser.DoBasicMarkTag(text, this, "pre");
+};
+
 function AfterRender(rendered) {
 	//렌더링 이후에 다 못한 처리를 한다
 	var rules = [[/<script/gi, '&lt;script'], [/<\/script/gi, '&lt;/script'], [/<style/gi, '&lt;style'], [/<\/style/gi, '&lt;/style']];
