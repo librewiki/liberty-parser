@@ -730,6 +730,16 @@ ListNode.prototype.Render = function (wikiparser) {
 	}
 	return res.join("");
 };
+function HRNode(){
+  this.children = [];
+  this.NAME = "HR";
+}
+HRNode.prototype.Process = function(){
+
+};
+HRNode.prototype.Render = function(wikiparser){
+  return "<hr />";
+};
 //////////////////////////////
 function LibertyMark() {
 	this.children = [];
@@ -926,6 +936,15 @@ WikiParser.prototype.Parse = function (text) {
 
 	stack[0].Process();
 	return stack[0];
+};
+WikiParser.prototype.DoBasicMarkStandaloneTag = function(text,hooker,tagName){
+  var lower = text.toLowerCase();
+  var idx = 0;
+  var len = tagName.length;
+  while((idx = lower.indexOf("<"+tagName, idx)) != -1){
+    this.AddMark(new HookMarker(hooker, MARK_TYPE.STANDALONE,idx));
+    idx = lower.indexOf(">", idx);
+  }
 };
 //////////////////////////////
 function NowikiHooker() {
@@ -1127,7 +1146,43 @@ ListHooker.prototype.DoMark = function (wikiparser, text) {
 		idx += line.length + 1;
 	}
 };
-
+function RefHooker(){
+  this.NAME = "REF HOOKER";
+  this.NODE = RefNode;
+}
+RefHooker.prototype.DoMark = function(wikiparser,text){
+  wikiparser.DoBasicMarkTag(text, this, "ref");
+};
+//////////////////////////////
+function ReferencesHooker(){
+  this.NAME = "REFERENCES HOOKER";
+  this.NODE = ReferencesNode;
+}
+ReferencesHooker.prototype.DoMark = function(wikiparser,text){
+  wikiparser.DoBasicMarkStandaloneTag(text, this, "references");
+};
+//////////////////////////////
+function ExtLinkHooker(){
+  this.NAME = "EXTERNAL LINK HOOKER";
+  this.NODE = ExtLinkNode;
+}
+ExtLinkHooker.prototype.DoMark = function(wikiparser,text){
+  var idx = 0;
+  while((idx = text.indexOf("[", idx)) != -1){
+    if(text.charAt(idx+1)!="["){
+      wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
+      idx += 1;
+    }else idx += 2;
+  }
+  idx = 0;
+  while((idx = text.indexOf("]", idx)) != -1){
+    if(text.charAt(idx+1)!="]"){
+      idx += 1;
+      wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
+    }else idx += 2;
+  }
+};
+///////////////////////////////////
 function PreTagHooker(){
  	this.NAME = "PRETAG HOOKER";
 	this.NODE = PreTagNode;
@@ -1135,7 +1190,25 @@ function PreTagHooker(){
 PreTagHooker.prototype.DoMark = function (wikiparser, text) {
 	wikiparser.DoBasicMarkTag(text, this, "pre");
 };
-
+function HRHooker(){
+  this.NAME = "HR HOOKER";
+  this.NODE = HRNode;
+}
+HRHooker.prototype.DoMark = function(wikiparser, text){
+  if(text.endsWith("\n") === false){
+    text = text.concat("\n");
+  }
+  var lines = text.split("\n");
+  var idx = 0;
+  for(var i in lines){
+    var line = lines[i];
+    if(line.startsWith("----")){
+      wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG, idx));
+      wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG, idx + line.length));
+    }
+    idx += line.length + 1;
+  }
+};
 function AfterRender(rendered) {
 	//렌더링 이후에 다 못한 처리를 한다
 	var rules = [[/<script/gi, '&lt;script'], [/<\/script/gi, '&lt;/script'], [/<style/gi, '&lt;style'], [/<\/style/gi, '&lt;/style']];
@@ -1150,15 +1223,19 @@ function Parse(text) {
 	if (wikiparser.constructor == null) {
 		throw "The javascript interpreter is not support dameparser! it have to support constructor property";
 	}
-	wikiparser.AddHooker(new NowikiHooker());
-	wikiparser.AddHooker(new TemplateHooker());
-	wikiparser.AddHooker(new TableHooker());
-	wikiparser.AddHooker(new BoldTagHooker());
-	wikiparser.AddHooker(new ItalicHooker());
-	wikiparser.AddHooker(new BRTagHooker());
-	wikiparser.AddHooker(new LinkHooker());
-	wikiparser.AddHooker(new HeadingHooker());
-	wikiparser.AddHooker(new ListHooker());
+  wikiparser.AddHooker(new NowikiHooker());
+  wikiparser.AddHooker(new TemplateHooker());
+  wikiparser.AddHooker(new TableHooker());
+  wikiparser.AddHooker(new BoldTagHooker());
+  wikiparser.AddHooker(new ItalicHooker());
+  wikiparser.AddHooker(new BRTagHooker());
+  wikiparser.AddHooker(new LinkHooker());
+  wikiparser.AddHooker(new ExtLinkHooker());
+  wikiparser.AddHooker(new HeadingHooker());
+  wikiparser.AddHooker(new RefHooker());
+  wikiparser.AddHooker(new ReferencesHooker());
+  wikiparser.AddHooker(new ListHooker());
+  wikiparser.AddHooker(new HRHooker());
 	//위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
 	var a = wikiparser.Parse(text);
 	rendered = a.Render(wikiparser);
