@@ -1300,9 +1300,9 @@ function Parse(text){
   wikiparser.AddHooker(new ReferencesHooker());
   wikiparser.AddHooker(new ListHooker());
   wikiparser.AddHooker(new HRHooker());
+  //지원하고자 하는 언어를 추가
   wikiparser.Addi18n("english");
   wikiparser.Addi18n("korean");
-  console.log(wikiparser.i18nKey("left"));
   //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
