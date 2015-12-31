@@ -119,7 +119,8 @@ LinkNode.prototype.Render = function(wikiparser){
   var res = [];
   var showText = '';
   var i18n = {
-    file:/(파일|File).*/i
+    file:new RegExp(wikiparser.i18nKey("file")+'.*',"i")
+    //  /(파일|File).*/i
   };
   if(i18n.file.test(this.children[0].text)){
     return this.FileRender(wikiparser);
@@ -786,6 +787,7 @@ HookMarker.prototype.IsGreaterThan = function(marker){
   return res;
 };
 function WikiParser(){
+  this.i18ns = {};
   this.hookers = [];
   this.markList = [];
   this.headingQue = [];
@@ -800,6 +802,20 @@ function WikiParser(){
 }
 WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
+};
+//nation is string(e.g. "korean")
+WikiParser.prototype.Addi18n = function(nation){
+  this.i18ns[nation] = require('./i18n/'+nation+'.json');
+};
+WikiParser.prototype.i18nKey = function(keyword){
+  var res = ['('];
+  for (var a in this.i18ns) {
+    res.push(this.i18ns[a][keyword]);
+    res.push('|');
+  }
+  res.pop();
+  res.push(')');
+  return res.join('');
 };
 WikiParser.prototype.AddMark = function(marker){
   var isDoneInsert = false;
@@ -1282,6 +1298,8 @@ function Parse(text){
   wikiparser.AddHooker(new ReferencesHooker());
   wikiparser.AddHooker(new ListHooker());
   wikiparser.AddHooker(new HRHooker());
+  wikiparser.Addi18n("english");
+  wikiparser.Addi18n("korean");
   //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
