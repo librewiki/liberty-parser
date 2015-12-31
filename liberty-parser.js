@@ -75,7 +75,6 @@ TextNode.prototype.Render = function(wikiparser){
     }else if(texts[i]=="ISBN"&&i<texts.length-1){
       if(isbn.test(texts[i+1])){
         res.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/특수:책찾기/');
-        console.log(texts[i+1]);
         res.push(texts[i+1]);
         res.push('">ISBN ');
         res.push(texts[i+1]);
@@ -222,7 +221,12 @@ RefNode.prototype.Process = function(wikiparser){
 RefNode.prototype.Render = function(wikiparser){
   var num = ++wikiparser.referNum;
   var option = wikiparser.AttrParse(this.children[0].text);
-  var content = this.children[0].text;
+  var contentArr = [];
+  for(var k in this.children){
+    var it = this.children[k];
+    contentArr.push(it.Render(wikiparser));
+  }
+  var content = contentArr.join("");
   var temp = content.indexOf('>');
   content = content.substr(temp+1);
   content = content.substring(0, content.indexOf('</ref')).trim();
@@ -739,6 +743,18 @@ function HookMarker(hooker,markType,pos){
   this.position = pos;
   this.NAME = "HOOK MARKER";
 }
+HookMarker.prototype.IsGreaterThan = function(marker){
+  var res = false;
+  if(this.position > marker.position){
+    res = true;
+  }
+  else if(this.position == marker.position){
+    if(marker.markType == MARK_TYPE.CLOSE_TAG){
+      res = true;
+    }
+  }
+  return res;
+};
 function WikiParser(){
   this.hookers = [];
   this.markList = [];
@@ -759,7 +775,7 @@ WikiParser.prototype.AddMark = function(marker){
   var isDoneInsert = false;
   for(var i in this.markList){
     var iter = this.markList[i];
-    if(iter.position > marker.position){
+    if (iter.IsGreaterThan(marker)) {
       this.markList.splice(i,0,marker);
       isDoneInsert = true;
       break;
