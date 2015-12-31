@@ -64,26 +64,31 @@ TextNode.prototype.Process = function(wikiparser){
 TextNode.prototype.Render = function(wikiparser){
   var res = [];
   var isbn = /\d{3}-\d-\d{8}-\d|\d{2}-\d{3}-\d{4}-\d/;
-  var texts = this.text.split(" ");
-  for (var i=0;i<texts.length;i++){
-    if(texts[i].startsWith("http://")||texts[i].startsWith("https://")){
-      res.push('<a style="color:#008000;" href="');
-      res.push(texts[i]);
-      res.push('">');
-      res.push(texts[i]);
-      res.push('</a>');
-    }else if(texts[i]=="ISBN"&&i<texts.length-1){
-      if(isbn.test(texts[i+1])){
-        res.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/특수:책찾기/');
-        res.push(texts[i+1]);
-        res.push('">ISBN ');
-        res.push(texts[i+1]);
-        res.push('</a>');
-        i++;
-      }
-    }else res.push(texts[i]);
+  var lines = this.text.split("\n");
+  for (var k=0;k<lines.length;k++){
+    var texts = lines[k].split(" ");
+    var renderedLine = [];
+    for (var i=0;i<texts.length;i++){
+      if(texts[i].startsWith("http://")||texts[i].startsWith("https://")){
+        renderedLine.push('<a style="color:#008000;" href="');
+        renderedLine.push(texts[i]);
+        renderedLine.push('">');
+        renderedLine.push(texts[i]);
+        renderedLine.push('</a>');
+      }else if((texts[i]=="ISBN")&&i<texts.length-1){
+        if(isbn.test(texts[i+1])){
+          renderedLine.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/특수:책찾기/');
+          renderedLine.push(texts[i+1]);
+          renderedLine.push('">ISBN ');
+          renderedLine.push(texts[i+1]);
+          renderedLine.push('</a>');
+          i++;
+        }
+      }else renderedLine.push(texts[i]);
+    }
+    res.push(renderedLine.join(' '));
   }
-  return res.join(' ');
+  return res.join('\n');
 };
 //////////////////////////////
 function BRNode(){
@@ -113,7 +118,10 @@ LinkNode.prototype.Process = function(){
 LinkNode.prototype.Render = function(wikiparser){
   var res = [];
   var showText = '';
-  if(this.children[0].text.startsWith("[[파일:")){
+  var i18n = {
+    file:/(파일|File).*/i
+  };
+  if(i18n.file.test(this.children[0].text)){
     return this.FileRender(wikiparser);
   }
   res.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/');
@@ -143,16 +151,18 @@ LinkNode.prototype.Render = function(wikiparser){
   res.push('</a>');
   return res.join("");
 };
-LinkNode.prototype.FileRender = function (first_argument) {
+LinkNode.prototype.FileRender = function(wikiparser) {
   var res = [];
   var imgFolder = "//librewiki.net/images/5/5e/";
   var imglink = "//librewiki.net/wiki/";
-  var data = this.children[0].text.substring(2,this.children[0].text.length - 2).split('|');
+  var innerText = wikiparser.OnlyText(this);
+  var data = innerText.substring(2,innerText.length - 2).split('|');
   var len = data.length;
   res.push('<a class="image" href="');
   res.push(imglink);
   res.push(data[0]);
   res.push('"><img ');
+  var thumbIdx = -1;
   for(var i = 1;i<len;i++){
     if((/^\d.*/).test(data[i])){
       res.push('width="');
@@ -162,17 +172,37 @@ LinkNode.prototype.FileRender = function (first_argument) {
       res.push(unit);
       res.push('" ');
     }
-    else if(data[i].trim()=="섬네일"){
+    else if((/thumb|섬네일/i).test(data[i].trim())){
       res.push('class="thumbimage" ');
+      thumbIdx = i+1;
     }
     else if(data[i].trim()=="왼쪽"){
       //왼쪽오른쪽 넣어주긴 해야 하는데
     }
+    else if(i==thumbIdx){
+      res.push('src="');
+      res.push(imgFolder);
+      res.push(data[0].substr(3).replace(/ /g,"_"));
+      res.push('" /></a>');
+      res.push('<div class="thumbcaption">');
+      var temp = [];
+      for(var k in this.children){
+        var it = this.children[k];
+        temp.push(it.Render(wikiparser));
+      }
+      var innerThumb = temp.join('').split(/\|섬네일\||\|thumb\|/i)[1];
+      innerThumb = innerThumb.substring(0,innerThumb.length-2);
+      res.push(innerThumb);
+      res.push('</div>');
+      break;
+    }
   }
-  res.push('src="');
-  res.push(imgFolder);
-  res.push(data[0].substr(3).replace(/ /g,"_"));
-  res.push('" /></a>');
+  if(thumbIdx==-1){
+    res.push('src="');
+    res.push(imgFolder);
+    res.push(data[0].substr(3).replace(/ /g,"_"));
+    res.push('" /></a>');
+  }
   return(res.join(""));
 };
 
