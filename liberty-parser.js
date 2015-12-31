@@ -773,6 +773,18 @@ function HookMarker(hooker, markType, pos) {
 	this.position = pos;
 	this.NAME = "HOOK MARKER";
 }
+HookMarker.prototype.IsGreatThen = function(marker){
+  var res = false;
+  if(this.position > marker.position){
+    res = true;
+  }
+  else if(this.position == marker.position){
+    if(marker.markType == MARK_TYPE.CLOSE_TAG){
+      res = true;
+    } 
+  }
+  return res;
+};
 function WikiParser() {
 	this.hookers = [];
 	this.markList = [];
@@ -800,7 +812,7 @@ WikiParser.prototype.AddMark = function (marker) {
 	var isDoneInsert = false;
 	for (i in this.markList) {
 		var iter = this.markList[i];
-		if (iter.position > marker.position) {
+		if (iter.IsGreatThen(marker)) {
 			this.markList.splice(i, 0, marker);
 			isDoneInsert = true;
 			break;
