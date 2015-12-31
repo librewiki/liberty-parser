@@ -810,8 +810,10 @@ WikiParser.prototype.Addi18n = function(nation){
 WikiParser.prototype.i18nKey = function(keyword){
   var res = ['('];
   for (var a in this.i18ns) {
-    res.push(this.i18ns[a][keyword]);
-    res.push('|');
+    if(!isNull(this.i18ns[a][keyword])){
+      res.push(this.i18ns[a][keyword]);
+      res.push('|');
+    }
   }
   res.pop();
   res.push(')');
@@ -1300,6 +1302,7 @@ function Parse(text){
   wikiparser.AddHooker(new HRHooker());
   wikiparser.Addi18n("english");
   wikiparser.Addi18n("korean");
+  console.log(wikiparser.i18nKey("left"));
   //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
