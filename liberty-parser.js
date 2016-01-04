@@ -633,9 +633,36 @@ ListNode.prototype.Process = function(){
     it.Process();
   }
 };
+ListNode.prototype.common = function(st1,st2){
+  var fl = st1.length;
+  var shorter = st2.length;
+  var Tags = {
+    "*" : "ul",
+    "#" : "ol",
+    ";" : "dl",
+    ":" : "dl"
+  };
+  if ( fl < shorter ) {
+    shorter = fl;
+  }
+  var i;
+  for ( i = 0; i < shorter; ++i ) {
+    if ( Tags[st1[i]] != Tags[st2[i]] ) {
+      break;
+    }
+  }
+  return i;
+};
 ListNode.prototype.Render = function(wikiparser){
   var res = [];
-  var stepCount = 0;
+  var prfs = ["*","#",";",":"];
+  var Tags = {
+    "*" : ["ul","li"],
+    "#" : ["ol","li"],
+    ";" : ["dl","dt"],
+    ":" : ["dl","dd"]
+  };
+  var stepCount = 100;
   var isNewLine = true;
   var listStack = [];
   var listTag = {"#":"ol","*":"ul"};
@@ -647,53 +674,83 @@ ListNode.prototype.Render = function(wikiparser){
     }
     else{
       //새 줄이면 처음에 *이 몇개 있는지 체크해야 한다.
-      var text = iter.text;
+      var text = iter.Render(wikiparser);
       var j = 0;
       var k = 0;
       var nowStepCount;
-      for(j = 0 ; j < text.length ; j++){
+      var tleng = text.length;
+      var curpf='', lastpf='';
+      var curpfs = '', lastpfs='';
+      for(j = 0 ; j < tleng ; j++){
         if(isNewLine){
           isNewLine = false;
           nowStepCount = 0;
-          for(k = j; k < text.length ; k++){
-            if(text[k] == "*" || text[k] == "#"){
+          curpfs = '';
+          for(k = j; k < tleng ; k++){
+            if(prfs.indexOf(text[k])!== -1){
               nowStepCount++;
+              curpfs += text[k];
             }
             else{
+              curpf = text[k - 1];
               break;
             }
-          }
-          if(stepCount < nowStepCount){
-            listStack.push(text[k - 1]);
+          }// || (stepCount == nowStepCount && Tags[curpf][0] !== Tags[last][0])
+          console.log(lastpfs, curpfs,this.common(lastpfs, curpfs),stepCount);
+          if(this.common(lastpfs, curpfs)<nowStepCount){
+          //if(stepCount < nowStepCount){//이전<현재
+          console.log("dsfa");
+            listStack.push(curpf);
             res.push("<");
-            res.push(listTag[text[k-1]]);
+            res.push(Tags[curpf][0]);
             res.push(">");
           }
-          res.push("<li>");
+          res.push("<");
+          res.push(Tags[curpf][1]);
+          res.push(">");
           stepCount = nowStepCount;
+          lastpfs = curpfs;
           j = k - 1;
         }
         else{
           if(text[j] == '\n'){
             nowStepCount = 0;
-            for(k = j + 1; k < text.length ; k++){
-              if(text[k] == "*" || text[k] == "#"){
+            curpfs = '';
+            for(k = j + 1; k < tleng ; k++){
+              if(prfs.indexOf(text[k])!== -1){
                 nowStepCount++;
+                curpfs += text[k];
               }
               else{
                 break;
               }
             }
-            if(stepCount > nowStepCount){
-              ch = listStack.pop();
+            if(stepCount == nowStepCount){
               res.push("</");
-              res.push(listTag[ch]);
+              res.push(Tags[curpf][1]);
               res.push(">");
             }
-            if(stepCount >= nowStepCount){
-              res.push("</li>");
+            if(this.common(lastpfs, curpfs)<stepCount){
+            //if(stepCount > nowStepCount){//현재>다음
+              var x = stepCount - this.common(lastpfs, curpfs) ;
+              while (x>0) {
+                console.log(listStack);
+                ch = listStack.pop();
+                res.push("</");
+                res.push(Tags[ch][1]);
+                res.push("></");
+                res.push(Tags[ch][0]);
+                res.push(">");
+                --x;
+              }
+              if(listStack.length!==0){
+                res.push("</");
+                res.push(Tags[listStack[listStack.length-1]][1]);
+                res.push(">");
+              }
             }
             isNewLine = true;
+            lastpf = curpf;
           }
           else{
             res.push(text[j]);
@@ -704,9 +761,10 @@ ListNode.prototype.Render = function(wikiparser){
   }
   while(listStack.length !== 0){
     ch = listStack.pop();
-    res.push("</li>");
     res.push("</");
-    res.push(listTag[ch]);
+    res.push(Tags[ch][1]);
+    res.push("></");
+    res.push(Tags[ch][0]);
     res.push(">");
   }
   return res.join("");
@@ -1206,11 +1264,11 @@ ListHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   for(var i in lines){
     var line = lines[i];
-    if( isListStart == -1 && (line.startsWith("*") || line.startsWith("#"))){
+    if( isListStart == -1 && (line.startsWith("*") || line.startsWith("#") || line.startsWith(";") || line.startsWith(":"))){
       isListStart = i;
       wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG,idx));
     }
-    else if(isListStart != -1 && !(line.startsWith("*") || line.startsWith("#"))){
+    else if(isListStart != -1 && !(line.startsWith("*") || line.startsWith("#") || line.startsWith(";") || line.startsWith(":"))){
       wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG, idx - 1));
       isListStart = -1;
     }
