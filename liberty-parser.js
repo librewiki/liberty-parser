@@ -6,29 +6,7 @@
 //Render() -> 노드를 HTML로 변환한다.
 //Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다.
 //테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
-/*
-파서 객체의 파서를 호출하면
-​AddHooker라는 함수를 통해서
-​넣었던 후커?에게 돌아가면서
-​위키텍스트를 던져줍니다.
-그러면 후커는 그 텍스트 자르고 삶고 찌고 하면서
-자기가 처리해야 할 태그가 있는 위치를
-마크를 심습니다.
-그게 AddMark함수를 통해 하는데
-안에서는
-이 마크를
-pos를 기준으로 정렬시킵니다.
-그 다음 끝나면 이제
-마크 리스트를 순환하면서
-노드 트리를 만듭니다.
-노드 트리가 끝나면
-이제 그걸
-노드 트리가 끝나면
-제일 부모 노드가 LibertyMark 노드입니다.
-그럼 그 노드의 렌더함수를 호출하면
-차일드를 돌면서 렌더함수를 호출하고...
-결과값을 돌려 주는 거죠
-*/
+
 function NowikiNode(){
   this.type = "NOWIKI";
   this.children = [];
@@ -43,7 +21,8 @@ PreTagNode.prototype.Process = function () {
 PreTagNode.prototype.Render = function (wikiparser) {
 	res = wikiparser.OnlyText(this);
 	return res.replace(/</gi, "&lt;").replace(/>/gi, "&gt;")
-	.replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>");
+	.replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>")
+  .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
 };
 NowikiNode.prototype.Process = function(){
   var stack = [];
@@ -646,7 +625,7 @@ TemplateNode.prototype.Render = function(wikiparser){
 ////////////////////////////////////////////////////////////
 function ListNode(){
   this.children = [];
-  this.NAME = "UNNUMBERED LIST";
+  this.NAME = "LIST";
 }
 ListNode.prototype.Process = function(){
   for(var i in this.children){
@@ -788,6 +767,7 @@ HookMarker.prototype.IsGreaterThan = function(marker){
 };
 function WikiParser(){
   this.i18ns = {};
+  this.local = "english";
   this.hookers = [];
   this.markList = [];
   this.headingQue = [];
@@ -1303,6 +1283,8 @@ function Parse(text){
   //지원하고자 하는 언어를 추가
   wikiparser.Addi18n("english");
   wikiparser.Addi18n("korean");
+  //서비스 언어를 설정
+  wikiparser.local = "korean";
   //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
