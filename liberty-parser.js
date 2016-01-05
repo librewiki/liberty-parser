@@ -736,9 +736,9 @@ ListNode.prototype.Render = function(wikiparser){
           stbuilder.push(text[j]);
         }
       }
-      lines.push("endoflist");
     }
   }
+  lines.push("endoflist");
   for(i in lines){
     var line = lines[i];
     var lineleng = line.length;
