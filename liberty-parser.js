@@ -653,119 +653,126 @@ ListNode.prototype.common = function(st1,st2){
   }
   return i;
 };
-ListNode.prototype.Render = function(wikiparser){
-  var res = [];
-  var prfs = ["*","#",";",":"];
-  var Tags = {
+function ListSubNode(prefixStr,prefixChar,text,continueous){
+  this.prefixStr = prefixStr;
+  this.prefixChar = prefixChar;
+  this.children = [];
+  this.isContinuous = continueous;
+  this.text = text;
+  this.st1 = '';
+  this.st2 = '';
+  this.Tags = {
     "*" : ["ul","li"],
     "#" : ["ol","li"],
     ";" : ["dl","dt"],
     ":" : ["dl","dd"]
   };
-  var stepCount = 100;
-  var isNewLine = true;
-  var listStack = [];
-  var listTag = {"#":"ol","*":"ul"};
-  var ch;
+}
+ListSubNode.prototype.push1 = function(res){
+  this.st1 = this.Tags[this.prefixChar][0];
+  res.push("\n<");
+  res.push(this.st1);
+  res.push(">");
+};
+ListSubNode.prototype.push2 = function(res){
+  this.st2 = this.Tags[this.prefixChar][1];
+  res.push("<");
+  res.push(this.st2);
+  res.push(">");
+};
+ListSubNode.prototype.pop1 = function(res){
+  if(this.st1!==''){
+    res.push("</");
+    res.push(this.st1);
+    res.push(">\n");
+    this.st1='';
+  }
+};
+ListSubNode.prototype.pop2 = function(res){
+  if(this.st2!==''){
+    res.push("</");
+    res.push(this.st2);
+    res.push(">");
+    this.st2='';
+  }
+};
+ListSubNode.prototype.Render = function(res){
+  if(!this.isContinuous) this.push1(res);
+  this.push2(res);
+  res.push(this.text);
   for(var i in this.children){
     var iter = this.children[i];
+    if(iter.isContinuous){
+      this.pop2(res);
+    }
+    iter.Render(res);
+  }
+  this.pop2(res);
+  this.pop1(res);
+};
+ListNode.prototype.Render = function(wikiparser){
+  var res = [];
+  var prfs = ["*","#",";",":"];
+  var subnodeStack = [];
+  var lines = [];
+  var stbuilder = [];
+  var i;
+  this.children[this.children.length-1].text+="\n";
+  for(i in this.children){
+    //라인별로 분리한다.
+    var iter = this.children[i];
     if(iter.type != "TEXT"){
-      res.push(iter.Render(wikiparser));
+      stbuilder.push(iter.Render(wikiparser));
     }
     else{
-      //새 줄이면 처음에 *이 몇개 있는지 체크해야 한다.
       var text = iter.Render(wikiparser);
-      var j = 0;
-      var k = 0;
-      var nowStepCount;
       var tleng = text.length;
-      var curpf='', lastpf='';
-      var curpfs = '', lastpfs='';
-      for(j = 0 ; j < tleng ; j++){
-        if(isNewLine){
-          isNewLine = false;
-          nowStepCount = 0;
-          curpfs = '';
-          for(k = j; k < tleng ; k++){
-            if(prfs.indexOf(text[k])!== -1){
-              nowStepCount++;
-              curpfs += text[k];
-            }
-            else{
-              curpf = text[k - 1];
-              break;
-            }
-          }// || (stepCount == nowStepCount && Tags[curpf][0] !== Tags[last][0])
-          console.log(lastpfs, curpfs,this.common(lastpfs, curpfs),stepCount);
-          if(this.common(lastpfs, curpfs)<nowStepCount){
-          //if(stepCount < nowStepCount){//이전<현재
-          console.log("dsfa");
-            listStack.push(curpf);
-            res.push("<");
-            res.push(Tags[curpf][0]);
-            res.push(">");
-          }
-          res.push("<");
-          res.push(Tags[curpf][1]);
-          res.push(">");
-          stepCount = nowStepCount;
-          lastpfs = curpfs;
-          j = k - 1;
+      for(var j = 0;j<tleng;j++){
+        if(text[j]=="\n"){
+          lines.push(stbuilder.join(""));
+          stbuilder = [];
         }
         else{
-          if(text[j] == '\n'){
-            nowStepCount = 0;
-            curpfs = '';
-            for(k = j + 1; k < tleng ; k++){
-              if(prfs.indexOf(text[k])!== -1){
-                nowStepCount++;
-                curpfs += text[k];
-              }
-              else{
-                break;
-              }
-            }
-            if(stepCount == nowStepCount){
-              res.push("</");
-              res.push(Tags[curpf][1]);
-              res.push(">");
-            }
-            if(this.common(lastpfs, curpfs)<stepCount){
-            //if(stepCount > nowStepCount){//현재>다음
-              var x = stepCount - this.common(lastpfs, curpfs) ;
-              while (x>0) {
-                console.log(listStack);
-                ch = listStack.pop();
-                res.push("</");
-                res.push(Tags[ch][1]);
-                res.push("></");
-                res.push(Tags[ch][0]);
-                res.push(">");
-                --x;
-              }
-              if(listStack.length!==0){
-                res.push("</");
-                res.push(Tags[listStack[listStack.length-1]][1]);
-                res.push(">");
-              }
-            }
-            isNewLine = true;
-            lastpf = curpf;
-          }
-          else{
-            res.push(text[j]);
-          }
+          stbuilder.push(text[j]);
         }
       }
+      lines.push("endoflist");
     }
   }
-  while(listStack.length !== 0){
-    ch = listStack.pop();
-    res.push("</");
-    res.push(Tags[ch][1]);
-    res.push("></");
-    res.push(Tags[ch][0]);
-    res.push(">");
+  for(i in lines){
+    var line = lines[i];
+    var lineleng = line.length;
+    var k;
+    for(k = 0;k<lineleng;k++){
+      if(prfs.indexOf(line[k]) !== -1){}
+      else{
+        if(subnodeStack.length===0){
+          subnodeStack.push(new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),false));
+        }
+        else{
+          while(subnodeStack.length>0){
+            var last = subnodeStack[subnodeStack.length-1];
+            var x = this.common(last.prefixStr,line.substr(0,k));
+            if(x==last.prefixStr.length){
+              var sn = new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),x==k);
+              last.children.push(sn);
+              subnodeStack.push(sn);
+              break;
+            }
+            else{
+              if(subnodeStack.length==1){
+                subnodeStack.pop().Render(res);
+              }
+              else subnodeStack.pop();
+            }
+          }
+          if(subnodeStack.length===0){
+            subnodeStack.push(new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),false));
+          }
+        }
+        break;
+      }
+    }
   }
   return res.join("");
 };
