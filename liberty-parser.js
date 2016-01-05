@@ -97,14 +97,29 @@ LinkNode.prototype.Process = function(){
 LinkNode.prototype.Render = function(wikiparser){
   var res = [];
   var showText = '';
+  var srcFront = '//librewiki.net/wiki/';
+  var srcEnd = '';
+  var isInterwiki = false;
   var i18n = {
     file:new RegExp(wikiparser.i18nKey("file")+'.*',"i")
     //  /(파일|File).*/i
   };
+  var intwikiRgx = new RegExp(wikiparser.InterwikiKey()+':.*',"i");
   if(i18n.file.test(this.children[0].text)){
     return this.FileRender(wikiparser);
   }
-  res.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/');
+  var inter = this.children[0].text.match(intwikiRgx);
+  if(!isNull(inter)){
+    isInterwiki = true;
+    var x = wikiparser.interwikis[inter[1]].split("%s");
+    srcFront = x[0];
+    srcEnd = x[1];
+  }
+  res.push('<a style="color:#6699FF;" ');
+  res.push('"class="');
+  if(isInterwiki) res.push('interwiki ');
+  res.push('"href="');
+  res.push(srcFront);
   if(this.children[0].type == "TEXT"){
     if(this.children[0].text.startsWith("[[")){
       this.children[0].text = this.children[0].text.substr(2);
@@ -125,7 +140,9 @@ LinkNode.prototype.Render = function(wikiparser){
   else{
     showText = innerText.slice(1).join("|");
   }
+  if(isInterwiki) linkText=linkText.replace(inter[1]+":","");
   res.push(linkText);
+  res.push(srcEnd);
   res.push('">');
   res.push(showText);
   res.push('</a>');
@@ -744,8 +761,7 @@ ListNode.prototype.Render = function(wikiparser){
     var lineleng = line.length;
     var k;
     for(k = 0;k<lineleng;k++){
-      if(prfs.indexOf(line[k]) !== -1){}
-      else{
+      if(prfs.indexOf(line[k]) === -1){
         if(subnodeStack.length===0){
           subnodeStack.push(new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),false));
         }
@@ -833,6 +849,7 @@ HookMarker.prototype.IsGreaterThan = function(marker){
 function WikiParser(){
   this.i18ns = {};
   this.local = "english";
+  this.interwikis = {};
   this.hookers = [];
   this.markList = [];
   this.headingQue = [];
@@ -849,8 +866,8 @@ WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
 };
 //nation is string(e.g. "korean")
-WikiParser.prototype.Addi18n = function(nation){
-  this.i18ns[nation] = require('./i18n/'+nation+'.json');
+WikiParser.prototype.Addi18n = function(lang){
+  this.i18ns[lang] = require('./i18n/'+lang+'.json');
 };
 WikiParser.prototype.i18nKey = function(keyword){
   var res = ['('];
@@ -859,6 +876,19 @@ WikiParser.prototype.i18nKey = function(keyword){
       res.push(this.i18ns[a][keyword]);
       res.push('|');
     }
+  }
+  res.pop();
+  res.push(')');
+  return res.join('');
+};
+WikiParser.prototype.AddInterwiki = function(src){
+  this.interwikis = require(src);
+};
+WikiParser.prototype.InterwikiKey = function(keyword){
+  var res = ['('];
+  for (var a in this.interwikis) {
+    res.push(a);
+    res.push('|');
   }
   res.pop();
   res.push(')');
@@ -1350,6 +1380,7 @@ function Parse(text){
   wikiparser.Addi18n("korean");
   //서비스 언어를 설정
   wikiparser.local = "korean";
+  wikiparser.AddInterwiki("./interwiki.json");
   //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
