@@ -1,4 +1,5 @@
 "USE STRICT";
+var async = require('async');
 //*EDITING BY DAMEZUMA, NESSUN
 //*author DAMEZUMA, NESSUN
 //publish by MIT
@@ -860,6 +861,7 @@ function WikiParser(){
   this.referNum = 0;
   this.referRestart = 0;
   this.referContent = [];
+  this.wikiDB = {};
   this.linkNum = 0;
 }
 WikiParser.prototype.AddHooker = function(hooker){
@@ -907,6 +909,20 @@ WikiParser.prototype.AddMark = function(marker){
   if(isDoneInsert === false){
     this.markList.push(marker);
   }
+};
+WikiParser.prototype.AddDB = function(obj){
+  if(isNull(obj)){
+    console.error("wikiDB needed");
+    obj = {
+      GetWikitext: function(nameOfDoc){
+        return "";
+      },
+      DocExist: function(nameOfDoc){
+        return false;
+      }
+    };
+  }
+  this.wikiDB = obj;
 };
 WikiParser.prototype.DoBasicMarkTag = function(text,hooker,tagName){
   var lower = text.toLowerCase();
@@ -1356,11 +1372,15 @@ function isNull(obj){
 }
 
 //////////////////////////////
-function Parse(text){
+function Parse(text, wikiDB){
+  //wikiDB is object.
+  //wikiDB.GetWikitext(nameOfDoc) returns wikitext.
   var wikiparser = new WikiParser();
   if(isNull(wikiparser.constructor)){
     throw "The javascript interpreter is not support dameparser! it have to support constructor property";
   }
+  //wikiDB.DocExist(nameOfDoc) returns whether the document exists.
+  wikiparser.AddDB(wikiDB);
   wikiparser.AddHooker(new NowikiHooker());
   wikiparser.AddHooker(new PreTagHooker());
   wikiparser.AddHooker(new TemplateHooker());
@@ -1375,6 +1395,15 @@ function Parse(text){
   wikiparser.AddHooker(new ReferencesHooker());
   wikiparser.AddHooker(new ListHooker());
   wikiparser.AddHooker(new HRHooker());
+  async.waterfall([
+    function (callback) {
+      console.log ("asdf",wikiparser.wikiDB.DocExist("TEST"));
+      callback(null, wikiparser.wikiDB.DocExist("TEST"));
+    }
+  ],
+  function(err, results) {
+    console.log(results);
+  });
   //지원하고자 하는 언어를 추가
   wikiparser.Addi18n("english");
   wikiparser.Addi18n("korean");
