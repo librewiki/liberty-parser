@@ -1,9 +1,6 @@
-var mysql = require('mysql');
-var dbconfig = require('../../config/db_config');
-var pool = mysql.createPool(dbconfig);
 var async = require('async');
 module.exports.mariaDB = {
-  GetWikitext: function(title){
+  GetWikitext: function(title,pool,cb){
     var check_ns = title.split(":");
     var ns = 0;
     switch (check_ns[0]) {
@@ -59,10 +56,11 @@ module.exports.mariaDB = {
     ],
     // callback (final)
     function(err, result) {
+      cb(result);
       return result;
     });
   },
-  DocExist: function(title){
+  DocExist: function(title,pool,cb){
     var check_ns = title.split(":");
     var ns = 0;
     switch (check_ns[0]) {
@@ -97,12 +95,11 @@ module.exports.mariaDB = {
               connection.release();
               throw err;
             }
-            if(!rows) {
+            if(rows.length === 0) {
               exist = false;
             } else {
               exist =  true;
             }
-            console.log("ret",exist);
             callback(null, exist);
             connection.release();
           });
@@ -111,6 +108,7 @@ module.exports.mariaDB = {
     ],
     // callback (final)
     function(err, result) {
+      cb(result);
       return result;
     });
   }

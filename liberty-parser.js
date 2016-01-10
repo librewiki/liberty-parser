@@ -1,5 +1,4 @@
 "USE STRICT";
-var async = require('async');
 //*EDITING BY DAMEZUMA, NESSUN
 //*author DAMEZUMA, NESSUN
 //publish by MIT
@@ -7,7 +6,6 @@ var async = require('async');
 //Render() -> 노드를 HTML로 변환한다.
 //Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다.
 //테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
-
 function NowikiNode(){
   this.type = "NOWIKI";
   this.children = [];
@@ -116,10 +114,10 @@ LinkNode.prototype.Render = function(wikiparser){
     srcFront = x[0];
     srcEnd = x[1];
   }
-  res.push('<a style="color:#6699FF;" ');
-  res.push('"class="');
+  res.push('<a style="color:#6699FF;');
+  res.push('" class="');
   if(isInterwiki) res.push('interwiki ');
-  res.push('"href="');
+  res.push('" href="');
   res.push(srcFront);
   if(this.children[0].type == "TEXT"){
     if(this.children[0].text.startsWith("[[")){
@@ -1372,15 +1370,31 @@ function isNull(obj){
 }
 
 //////////////////////////////
-function Parse(text, wikiDB){
-  //wikiDB is object.
-  //wikiDB.GetWikitext(nameOfDoc) returns wikitext.
+function ParserInit(text,namespace,title){
   var wikiparser = new WikiParser();
   if(isNull(wikiparser.constructor)){
     throw "The javascript interpreter is not support dameparser! it have to support constructor property";
   }
-  //wikiDB.DocExist(nameOfDoc) returns whether the document exists.
-  wikiparser.AddDB(wikiDB);
+  wikiparser.namespace = namespace;
+  wikiparser.title = title;
+  wikiparser.text = text;
+  //지원하고자 하는 언어를 추가
+  wikiparser.Addi18n("english");
+  wikiparser.Addi18n("korean");
+  //서비스 언어를 설정
+  wikiparser.local = "korean";
+  wikiparser.AddInterwiki("./interwiki.json");
+  return wikiparser;
+}
+module.exports.ParserInit = ParserInit;
+function TemplateCheck(wikiparser){
+
+}
+function Parse(text){
+  var wikiparser = new WikiParser();
+  if(isNull(wikiparser.constructor)){
+    throw "The javascript interpreter is not support dameparser! it have to support constructor property";
+  }
   wikiparser.AddHooker(new NowikiHooker());
   wikiparser.AddHooker(new PreTagHooker());
   wikiparser.AddHooker(new TemplateHooker());
@@ -1395,15 +1409,6 @@ function Parse(text, wikiDB){
   wikiparser.AddHooker(new ReferencesHooker());
   wikiparser.AddHooker(new ListHooker());
   wikiparser.AddHooker(new HRHooker());
-  async.waterfall([
-    function (callback) {
-      console.log ("asdf",wikiparser.wikiDB.DocExist("TEST"));
-      callback(null, wikiparser.wikiDB.DocExist("TEST"));
-    }
-  ],
-  function(err, results) {
-    console.log(results);
-  });
   //지원하고자 하는 언어를 추가
   wikiparser.Addi18n("english");
   wikiparser.Addi18n("korean");
@@ -1414,6 +1419,7 @@ function Parse(text, wikiDB){
   var a = wikiparser.Parse(text);
   var rendered = a.Render(wikiparser);
   var res = AfterRender(rendered);
+  console.log("asdfffaa");
   //window.document.getElementById("preview").innerHTML = res;
   return res;
   //for node connect
