@@ -1,5 +1,4 @@
 "USE STRICT";
-var async = require('async');
 //*EDITING BY DAMEZUMA, NESSUN
 //*author DAMEZUMA, NESSUN
 //publish by MIT
@@ -309,11 +308,13 @@ HookMarker.prototype.IsGreaterThan = function(marker){
   return res;
 };
 function WikiParser(){
+  this.wikitext = '';
   this.i18ns = {};
   this.local = "english";
   this.interwikis = {};
   this.hookers = [];
   this.markList = [];
+  this.templateList = [];
   this.headingQue = [];
   this.headingQueCurr = 0;
   this.headingNumbering = [0,0,0,0,0,0];
@@ -839,7 +840,8 @@ function ParserInit(text,namespace,title){
   }
   wikiparser.namespace = namespace;
   wikiparser.title = title;
-  wikiparser.text = text;
+  wikiparser.wikitext = text;
+  wikiparser.templateList = [];
   //지원하고자 하는 언어를 추가
   wikiparser.Addi18n("english");
   wikiparser.Addi18n("korean");
@@ -850,10 +852,81 @@ function ParserInit(text,namespace,title){
 }
 module.exports.ParserInit = ParserInit;
 function TemplateCheck(wikiparser){
-
+  var idx = 0;
+  var nowikiOpen = wikiparser.wikitext.indexOf("<nowiki");
+  var preOpen = wikiparser.wikitext.indexOf("<pre");
+  nowikiClose = wikiparser.wikitext.indexOf("</nowiki",nowikiOpen);
+  preClose = wikiparser.wikitext.indexOf("</pre",preOpen);
+  while((idx = wikiparser.wikitext.indexOf("{{", idx)) != -1){
+    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)){
+      idx +=2;
+      continue;
+    }
+    var open = idx+2;
+    if((idx = wikiparser.wikitext.indexOf("}}", idx)) != -1){
+      var close = idx;
+      var templateText = wikiparser.wikitext.substring(open,close);
+      var templateArr = templateText.split("|");
+      templateArr.splice(0,0,'',open-2,close);
+      wikiparser.templateList.push(templateArr);
+      nowikiOpen = wikiparser.wikitext.indexOf("<nowiki",close);
+      preOpen = wikiparser.wikitext.indexOf("<pre",close);
+      nowikiClose = wikiparser.wikitext.indexOf("</nowiki",nowikiOpen);
+      preClose = wikiparser.wikitext.indexOf("</pre",preOpen);
+    }else{
+      break;
+    }
+    idx += 2;
+  }
+  //console.log(wikiparser.templateList);
+  return wikiparser;
 }
+module.exports.TemplateCheck = TemplateCheck;
+function TemplateReplace(wikiparser){
+  var sb = [];
+  var open = 0, close = 0;
+  for (var i = 0; i < wikiparser.templateList.length; i++) {
+    open = wikiparser.templateList[i][1];
+    sb.push(wikiparser.wikitext.substring(close,open));
+    console.log('d1sfe',wikiparser.templateList[i][0]);
+    sb.push(wikiparser.templateList[i][0]);
+    close = wikiparser.templateList[i][2]+2;
+  }
+  sb.push(wikiparser.wikitext.substring(close));
+  wikiparser.wikitext = sb.join("");
+  console.log('do22ne',wikiparser.wikitext);
+  return wikiparser;
+}
+module.exports.TemplateReplace = TemplateReplace;
+function DoParse(wikiparser){
+  wikiparser.AddHooker(new NowikiHooker());
+  wikiparser.AddHooker(new PreTagHooker());
+//  wikiparser.AddHooker(new TemplateHooker());
+  wikiparser.AddHooker(new TableHooker());
+  wikiparser.AddHooker(new BoldTagHooker());
+  wikiparser.AddHooker(new ItalicHooker());
+  wikiparser.AddHooker(new BRTagHooker());
+  wikiparser.AddHooker(new LinkHooker());
+  wikiparser.AddHooker(new ExtLinkHooker());
+  wikiparser.AddHooker(new HeadingHooker());
+  wikiparser.AddHooker(new RefHooker());
+  wikiparser.AddHooker(new ReferencesHooker());
+  wikiparser.AddHooker(new ListHooker());
+  wikiparser.AddHooker(new HRHooker());
+  var a = wikiparser.Parse(wikiparser.wikitext);
+  var rendered = '';
+  var Renderer = require('./wikiRenderer.js');
+  Renderer.Render(wikiparser, a, function (res) {
+    rendered = res;
+  });
+  var res = AfterRender(rendered);
+  return res;
+}
+module.exports.DoParse = DoParse;
+
 function Parse(text){
   var wikiparser = new WikiParser();
+  wikiparser.wikitext = text;
   if(isNull(wikiparser.constructor)){
     throw "The javascript interpreter is not support dameparser! it have to support constructor property";
   }
@@ -877,7 +950,6 @@ function Parse(text){
   //서비스 언어를 설정
   wikiparser.local = "korean";
   wikiparser.AddInterwiki("./interwiki.json");
-
   var a = wikiparser.Parse(text);
   var rendered = '';
   var Renderer = require('./wikiRenderer.js');
