@@ -202,125 +202,123 @@ ExtLinkNode.prototype.Render = function (wikiparser) {
 		return oriText;
 };
 //////////////////////////////
-function RefNode() {
-	this.type = "REF";
-	this.children = [];
+function RefNode(){
+  this.type = "REF";
+  this.children = [];
 }
-RefNode.prototype.Process = function (wikiparser) {
-	for (var i in this.children) {
-		var it = this.children[i];
-		it.Process();
-	}
+RefNode.prototype.Process = function(wikiparser){
+  for(var i in this.children){
+    var it = this.children[i];
+    it.Process();
+  }
 };
-RefNode.prototype.Render = function (wikiparser) {
-	var num = ++wikiparser.referNum;
-	var option = wikiparser.AttrParse(this.children[0].text);
-	var content = this.children[0].text;
-	var temp = content.indexOf('>');
-	content = content.substr(temp + 1);
-	content = content.substring(0, content.indexOf('</ref')).trim();
-	var res = [];
-	var alreadyNamed = false;
-	var named = false;
-	var j = 0;
-	for (var i in option) {
-		if (option[i][0] == "name") {
-			named = true;
-			var refname = option[i][1];
-			for (j in wikiparser.referNaming) {
-				if (wikiparser.referNaming[j][0] == refname) {
-					num = wikiparser.referNaming[j][1];
-					wikiparser.referNaming[j][2]++;
-					alreadyNamed = true;
-					wikiparser.referNum--;
-					break;
-				}
-			}
-			if (alreadyNamed === false)
-				wikiparser.referNaming.push([option[i][1], num, 0, 0]);
-			break;
-		}
-	}
-	if (alreadyNamed === false)
-		wikiparser.referContent.push(content);
-	res.push('<sup id="cite_ref-');
-	if (named) {
-		res.push(wikiparser.referNaming[j][0]);
-		res.push('_');
-		res.push(num);
-		res.push('-');
-		res.push(wikiparser.referNaming[j][3]++);
-	} else
-		res.push(num);
-	res.push('" class="reference"><a href="#cite_note-');
-	if (named) {
-		res.push(wikiparser.referNaming[j][0]);
-		res.push('-');
-	}
-	res.push(num);
-	res.push('"><span class="reference-hooker">[');
-	res.push(num - wikiparser.referRestart);
-	res.push("]</span></a></sup>");
-	return res.join("");
+RefNode.prototype.Render = function(wikiparser){
+  var num = ++wikiparser.referNum;
+  var option = wikiparser.AttrParse(this.children[0].text);
+  var content = this.children[0].text;
+  var temp = content.indexOf('>');
+  content = content.substr(temp+1);
+  content = content.substring(0, content.indexOf('</ref')).trim();
+  var res = [];
+  var alreadyNamed = false;
+  var named = false;
+  var j = 0;
+  for(var i in option){
+    if(option[i][0]=="name"){
+      named = true;
+      var refname = option[i][1];
+      for(j in wikiparser.referNaming){
+        if(wikiparser.referNaming[j][0]==refname){
+          num = wikiparser.referNaming[j][1];
+          wikiparser.referNaming[j][2]++;
+          alreadyNamed = true;
+          wikiparser.referNum--;
+          break;
+        }
+      }
+      if(alreadyNamed===false) wikiparser.referNaming.push([option[i][1],num,0,0]);
+      break;
+    }
+  }
+  if(alreadyNamed===false) wikiparser.referContent.push(content);
+  res.push('<sup id="cite_ref-');
+  if(named){
+    res.push(wikiparser.referNaming[j][0]);
+    res.push('_');
+    res.push(num);
+    res.push('-');
+    res.push(wikiparser.referNaming[j][3]++);
+  }
+  else res.push(num);
+  res.push('" class="reference"><a href="#cite_note-');
+  if(named){
+    res.push(wikiparser.referNaming[j][0]);
+    res.push('-');
+  }
+  res.push(num);
+  res.push('"><span class="reference-hooker">[');
+  res.push(num-wikiparser.referRestart);
+  res.push("]</span></a></sup>");
+  return res.join("");
 };
 //////////////////////////////
-function ReferencesNode() {
-	this.type = "REFERENCES";
-	this.children = [];
+function ReferencesNode(){
+  this.type = "REFERENCES";
+  this.children = [];
 }
-ReferencesNode.prototype.Process = function (wikiparser) {
-	for (var i in this.children) {
-		var it = this.children[i];
-		it.Process();
-	}
+ReferencesNode.prototype.Process = function(wikiparser){
+  for(var i in this.children){
+    var it = this.children[i];
+    it.Process();
+  }
 };
-ReferencesNode.prototype.Render = function (wikiparser) {
-	var res = [];
-	var refs = wikiparser.referNum - wikiparser.referRestart;
-	res.push('<ol class="references">');
-	for (var num = 1; num <= refs; num++) {
-		var named = false;
-		var nameNum = 0;
-		res.push('<li id="cite_note-');
-		for (var i in wikiparser.referNaming) {
-			if (wikiparser.referNaming[i][1] == num + wikiparser.referRestart) {
-				named = true;
-				nameNum = i;
-			}
-		}
-		if (named) {
-			res.push(wikiparser.referNaming[nameNum][0]);
-			res.push('-');
-			res.push(wikiparser.referNaming[nameNum][1]);
-			res.push('"><span class="mw-cite-backlink">↑');
-			for (var k = 0; k <= wikiparser.referNaming[nameNum][2]; k++) {
-				res.push('<sup><a href="#cite_ref-');
-				res.push(wikiparser.referNaming[nameNum][0]);
-				res.push('_');
-				res.push(num + wikiparser.referRestart);
-				res.push('-');
-				res.push(k);
-				res.push('">');
-				res.push(num);
-				res.push('.');
-				res.push(k);
-				res.push('</a></sup> ');
-			}
-			res.push('<span class="reference-text">');
-			res.push(wikiparser.referContent[num + wikiparser.referRestart - 1]);
-			res.push('</span></li>');
-		} else {
-			res.push(num + wikiparser.referRestart);
-			res.push('"><span class="mw-cite-backlink"><a href="#cite_ref-');
-			res.push(num + wikiparser.referRestart);
-			res.push('">↑</a></span> <span class="reference-text">');
-			res.push(wikiparser.referContent[num + wikiparser.referRestart - 1]);
-			res.push('</span></li>');
-		}
-	}
-	res.push('</ol>');
-	wikiparser.referRestart = wikiparser.referNum;
-	return res.join("");
+ReferencesNode.prototype.Render = function(wikiparser){
+  var res = [];
+  var refs = wikiparser.referNum - wikiparser.referRestart;
+  res.push('<ol class="references">');
+  for(var num = 1;num<=refs; num++){
+    var named = false;
+    var nameNum = 0;
+    res.push('<li id="cite_note-');
+    for(var i in wikiparser.referNaming){
+      if(wikiparser.referNaming[i][1]==num+wikiparser.referRestart){
+        named = true;
+        nameNum = i;
+      }
+    }
+    if(named){
+      res.push(wikiparser.referNaming[nameNum][0]);
+      res.push('-');
+      res.push(wikiparser.referNaming[nameNum][1]);
+      res.push('"><span class="mw-cite-backlink">↑');
+      for(var k =0; k<=wikiparser.referNaming[nameNum][2];k++){
+        res.push('<sup><a href="#cite_ref-');
+        res.push(wikiparser.referNaming[nameNum][0]);
+        res.push('_');
+        res.push(num+wikiparser.referRestart);
+        res.push('-');
+        res.push(k);
+        res.push('">');
+        res.push(num);
+        res.push('.');
+        res.push(k);
+        res.push('</a></sup> ');
+      }
+      res.push('<span class="reference-text">');
+      res.push(wikiparser.referContent[num+wikiparser.referRestart-1]);
+      res.push('</span></li>');
+    }else{
+      res.push(num+wikiparser.referRestart);
+      res.push('"><span class="mw-cite-backlink"><a href="#cite_ref-');
+      res.push(num+wikiparser.referRestart);
+      res.push('">↑</a></span> <span class="reference-text">');
+      res.push(wikiparser.referContent[num+wikiparser.referRestart-1]);
+      res.push('</span></li>');
+    }
+  }
+  res.push('</ol>');
+  wikiparser.referRestart = wikiparser.referNum;
+  return res.join("");
 };
 //////////////////////////////
 function HeadingNode() {
@@ -786,13 +784,17 @@ HookMarker.prototype.IsGreatThen = function(marker){
   return res;
 };
 function WikiParser() {
-	this.hookers = [];
-	this.markList = [];
-	this.headingQue = [];
-	this.headingQueCurr = 0;
-	this.headingNumbering = [0, 0, 0, 0, 0, 0];
-	this.headingMin = 100;
-}
+  this.hookers = [];
+  this.markList = [];
+  this.headingQue = [];
+  this.headingQueCurr = 0;
+  this.headingNumbering = [0,0,0,0,0,0];
+  this.headingMin = 100;
+  this.referNaming = []; //[name, 번호, 횟수, 횟수2]을 저장
+  this.referNum = 0;
+  this.referRestart = 0;
+  this.referContent = [];
+  this.linkNum = 0;}
 WikiParser.prototype.AttrParse = function (text) {
 	var startTag = /^<([-A-Za-z0-9_]+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
 	endTag = /^<\/([-A-Za-z0-9_]+)[^>]*>/,
@@ -938,7 +940,7 @@ WikiParser.prototype.Parse = function (text) {
 			break;
 		case MARK_TYPE.STANDALONE:
 			stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, iter.position)));
-			stack[stack.length - 1].children.push(new iter.marker.hooker.NODE());
+			stack[stack.length - 1].children.push(new iter.hooker.NODE());
 			break;
 		}
 		lastIdx = iter.position;
