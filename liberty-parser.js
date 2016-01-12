@@ -1,4 +1,5 @@
 "USE STRICT";
+var async = require('async');
 //*EDITING BY DAMEZUMA, NESSUN
 //*author DAMEZUMA, NESSUN
 //publish by MIT
@@ -8,69 +9,33 @@
 //테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
 function NowikiNode(){
   this.type = "NOWIKI";
+  this.render = "nowiki";
   this.children = [];
 }
+NowikiNode.prototype.Process = function(){
+  var stack = [];
+};
 function PreTagNode() {
 	this.type = "PRETAG";
+  this.render = "pretag";
 	this.children = [];
 }
 PreTagNode.prototype.Process = function () {
 	var stack = [];
 };
-PreTagNode.prototype.Render = function (wikiparser) {
-	res = wikiparser.OnlyText(this);
-	return res.replace(/</gi, "&lt;").replace(/>/gi, "&gt;")
-	.replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>")
-  .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
-};
-NowikiNode.prototype.Process = function(){
-  var stack = [];
-};
-NowikiNode.prototype.Render = function(wikiparser){
-  var res = wikiparser.OnlyText(this);
-  return res.replace(/</gi,"&lt;").replace(/>/gi,"&gt;")
-  .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
-};
 //////////////////////////////
 function TextNode(text){
   this.type = "TEXT";
+  this.render = "text";
   this.text = text;
 }
 TextNode.prototype.Process = function(wikiparser){
 
 };
-TextNode.prototype.Render = function(wikiparser){
-  var res = [];
-  var isbn = /\d{3}-\d-\d{8}-\d|\d{2}-\d{3}-\d{4}-\d/;
-  var lines = this.text.split("\n");
-  for (var k=0;k<lines.length;k++){
-    var texts = lines[k].split(" ");
-    var renderedLine = [];
-    for (var i=0;i<texts.length;i++){
-      if(texts[i].startsWith("http://")||texts[i].startsWith("https://")){
-        renderedLine.push('<a style="color:#008000;" href="');
-        renderedLine.push(texts[i]);
-        renderedLine.push('">');
-        renderedLine.push(texts[i]);
-        renderedLine.push('</a>');
-      }else if((texts[i]=="ISBN")&&i<texts.length-1){
-        if(isbn.test(texts[i+1])){
-          renderedLine.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/특수:책찾기/');
-          renderedLine.push(texts[i+1]);
-          renderedLine.push('">ISBN ');
-          renderedLine.push(texts[i+1]);
-          renderedLine.push('</a>');
-          i++;
-        }
-      }else renderedLine.push(texts[i]);
-    }
-    res.push(renderedLine.join(' '));
-  }
-  return res.join('\n');
-};
 //////////////////////////////
 function BRNode(){
   this.type = "BR";
+  this.render = "brtag";
   this.children = [];
 }
 BRNode.prototype.Process = function(){
@@ -79,12 +44,10 @@ BRNode.prototype.Process = function(){
     it.Process();
 	}
 };
-BRNode.prototype.Render = function(wikiparser){
-  return "<br />";
-};
 //////////////////////////////
 function LinkNode(){
   this.type = "LINK";
+  this.render = "link";
   this.children = [];
 }
 LinkNode.prototype.Process = function(){
@@ -93,117 +56,9 @@ LinkNode.prototype.Process = function(){
 		it.Process();
 	}
 };
-LinkNode.prototype.Render = function(wikiparser){
-  var res = [];
-  var showText = '';
-  var srcFront = '//librewiki.net/wiki/';
-  var srcEnd = '';
-  var isInterwiki = false;
-  var i18n = {
-    file:new RegExp(wikiparser.i18nKey("file")+'.*',"i")
-    //  /(파일|File).*/i
-  };
-  var intwikiRgx = new RegExp(wikiparser.InterwikiKey()+':.*',"i");
-  if(i18n.file.test(this.children[0].text)){
-    return this.FileRender(wikiparser);
-  }
-  var inter = this.children[0].text.match(intwikiRgx);
-  if(!isNull(inter)){
-    isInterwiki = true;
-    var x = wikiparser.interwikis[inter[1]].split("%s");
-    srcFront = x[0];
-    srcEnd = x[1];
-  }
-  res.push('<a style="color:#6699FF;');
-  res.push('" class="');
-  if(isInterwiki) res.push('interwiki ');
-  res.push('" href="');
-  res.push(srcFront);
-  if(this.children[0].type == "TEXT"){
-    if(this.children[0].text.startsWith("[[")){
-      this.children[0].text = this.children[0].text.substr(2);
-    }
-  }
-  if(this.children[this.children.length - 1].type == "TEXT"){
-    var t = this.children[this.children.length - 1].text;
-    if(t.endsWith("]]")){
-      t = t.substring(0, t.length -2);
-      this.children[this.children.length - 1].text = t;
-    }
-  }
-  var innerText = wikiparser.OnlyText(this).split("|");
-  var linkText = innerText[0];
-  if(innerText[1]===undefined){
-    showText = linkText;
-  }
-  else{
-    showText = innerText.slice(1).join("|");
-  }
-  if(isInterwiki) linkText=linkText.replace(inter[1]+":","");
-  res.push(linkText);
-  res.push(srcEnd);
-  res.push('">');
-  res.push(showText);
-  res.push('</a>');
-  return res.join("");
-};
-LinkNode.prototype.FileRender = function(wikiparser) {
-  var res = [];
-  var imgFolder = "//librewiki.net/images/5/5e/";
-  var imglink = "//librewiki.net/wiki/";
-  var innerText = wikiparser.OnlyText(this);
-  var data = innerText.substring(2,innerText.length - 2).split('|');
-  var len = data.length;
-  res.push('<a class="image" href="');
-  res.push(imglink);
-  res.push(data[0]);
-  res.push('"><img ');
-  var thumbIdx = -1;
-  for(var i = 1;i<len;i++){
-    if((/^\d.*/).test(data[i])){
-      res.push('width="');
-      res.push(data[i].match(/\d+/)[0]);
-      var unit = data[i].match(/\D+/)[0];
-      if(unit.trim()=="픽셀") unit = "px";
-      res.push(unit);
-      res.push('" ');
-    }
-    else if((/thumb|섬네일/i).test(data[i].trim())){
-      res.push('class="thumbimage" ');
-      thumbIdx = i+1;
-    }
-    else if(data[i].trim()=="왼쪽"){
-      //왼쪽오른쪽 넣어주긴 해야 하는데
-    }
-    else if(i==thumbIdx){
-      res.push('src="');
-      res.push(imgFolder);
-      res.push(data[0].substr(3).replace(/ /g,"_"));
-      res.push('" /></a>');
-      res.push('<div class="thumbcaption">');
-      var temp = [];
-      for(var k in this.children){
-        var it = this.children[k];
-        temp.push(it.Render(wikiparser));
-      }
-      var innerThumb = temp.join('').split(/\|섬네일\||\|thumb\|/i)[1];
-      innerThumb = innerThumb.substring(0,innerThumb.length-2);
-      res.push(innerThumb);
-      res.push('</div>');
-      break;
-    }
-  }
-  if(thumbIdx==-1){
-    res.push('src="');
-    res.push(imgFolder);
-    res.push(data[0].substr(3).replace(/ /g,"_"));
-    res.push('" /></a>');
-  }
-  return(res.join(""));
-};
-
 function ExtLinkNode(){
   this.type = "EXTERNAL LINK";
+  this.render = "extlink";
   this.children = [];
 }
 ExtLinkNode.prototype.Process = function(){
@@ -212,30 +67,10 @@ ExtLinkNode.prototype.Process = function(){
 		it.Process();
 	}
 };
-ExtLinkNode.prototype.Render = function(wikiparser){
-  var res = [];
-  var oriText = wikiparser.OnlyText(this);
-  var innerText = oriText.substring(1, oriText.length -1);
-  var innerParsed = innerText.split(' ');
-  var linkText = innerParsed[0];
-  if(innerParsed[1]===undefined){
-    showText = '['+(++wikiparser.linkNum)+']';
-  }
-  else{
-    showText = innerParsed.slice(1).join(" ");
-  }
-  if(linkText.startsWith("http://")||linkText.startsWith("https://")){
-    res.push('<a style="color:#008000;" href="');
-    res.push(linkText);
-    res.push('">');
-    res.push(showText);
-    res.push('</a>');
-    return res.join("");
-  }else return oriText;
-};
 //////////////////////////////
 function RefNode(){
   this.type = "REF";
+  this.render = "ref";
   this.children = [];
 }
 RefNode.prototype.Process = function(wikiparser){
@@ -244,63 +79,10 @@ RefNode.prototype.Process = function(wikiparser){
     it.Process();
   }
 };
-RefNode.prototype.Render = function(wikiparser){
-  var num = ++wikiparser.referNum;
-  var option = wikiparser.AttrParse(this.children[0].text);
-  var contentArr = [];
-  for(var k in this.children){
-    var it = this.children[k];
-    contentArr.push(it.Render(wikiparser));
-  }
-  var content = contentArr.join("");
-  var temp = content.indexOf('>');
-  content = content.substr(temp+1);
-  content = content.substring(0, content.indexOf('</ref')).trim();
-  var res = [];
-  var alreadyNamed = false;
-  var named = false;
-  var j = 0;
-  for(var i in option){
-    if(option[i][0]=="name"){
-      named = true;
-      var refname = option[i][1];
-      for(j in wikiparser.referNaming){
-        if(wikiparser.referNaming[j][0]==refname){
-          num = wikiparser.referNaming[j][1];
-          wikiparser.referNaming[j][2]++;
-          alreadyNamed = true;
-          wikiparser.referNum--;
-          break;
-        }
-      }
-      if(alreadyNamed===false) wikiparser.referNaming.push([option[i][1],num,0,0]);
-      break;
-    }
-  }
-  if(alreadyNamed===false) wikiparser.referContent.push(content);
-  res.push('<sup id="cite_ref-');
-  if(named){
-    res.push(wikiparser.referNaming[j][0]);
-    res.push('_');
-    res.push(num);
-    res.push('-');
-    res.push(wikiparser.referNaming[j][3]++);
-  }
-  else res.push(num);
-  res.push('" class="reference"><a href="#cite_note-');
-  if(named){
-    res.push(wikiparser.referNaming[j][0]);
-    res.push('-');
-  }
-  res.push(num);
-  res.push('"><span class="reference-hooker">[');
-  res.push(num-wikiparser.referRestart);
-  res.push("]</span></a></sup>");
-  return res.join("");
-};
 //////////////////////////////
 function ReferencesNode(){
   this.type = "REFERENCES";
+  this.render = "references";
   this.children = [];
 }
 ReferencesNode.prototype.Process = function(wikiparser){
@@ -309,57 +91,10 @@ ReferencesNode.prototype.Process = function(wikiparser){
     it.Process();
   }
 };
-ReferencesNode.prototype.Render = function(wikiparser){
-  var res = [];
-  var refs = wikiparser.referNum - wikiparser.referRestart;
-  res.push('<ol class="references">');
-  for(var num = 1;num<=refs; num++){
-    var named = false;
-    var nameNum = 0;
-    res.push('<li id="cite_note-');
-    for(var i in wikiparser.referNaming){
-      if(wikiparser.referNaming[i][1]==num+wikiparser.referRestart){
-        named = true;
-        nameNum = i;
-      }
-    }
-    if(named){
-      res.push(wikiparser.referNaming[nameNum][0]);
-      res.push('-');
-      res.push(wikiparser.referNaming[nameNum][1]);
-      res.push('"><span class="mw-cite-backlink">↑');
-      for(var k =0; k<=wikiparser.referNaming[nameNum][2];k++){
-        res.push('<sup><a href="#cite_ref-');
-        res.push(wikiparser.referNaming[nameNum][0]);
-        res.push('_');
-        res.push(num+wikiparser.referRestart);
-        res.push('-');
-        res.push(k);
-        res.push('">');
-        res.push(num);
-        res.push('.');
-        res.push(k);
-        res.push('</a></sup> ');
-      }
-      res.push('<span class="reference-text">');
-      res.push(wikiparser.referContent[num+wikiparser.referRestart-1]);
-      res.push('</span></li>');
-    }else{
-      res.push(num+wikiparser.referRestart);
-      res.push('"><span class="mw-cite-backlink"><a href="#cite_ref-');
-      res.push(num+wikiparser.referRestart);
-      res.push('">↑</a></span> <span class="reference-text">');
-      res.push(wikiparser.referContent[num+wikiparser.referRestart-1]);
-      res.push('</span></li>');
-    }
-  }
-  res.push('</ol>');
-  wikiparser.referRestart = wikiparser.referNum;
-  return res.join("");
-};
 //////////////////////////////
 function HeadingNode(){
   this.type = "HEADING";
+  this.render = "heading";
   this.children = [];
 }
 HeadingNode.prototype.Process = function(wikiparser){
@@ -368,56 +103,10 @@ HeadingNode.prototype.Process = function(wikiparser){
     it.Process();
   }
 };
-HeadingNode.prototype.Render = function(wikiparser){
-  //레벨 2->4로 건너뛰면 버그 발생(MW도 비권장)
-  var res = [];
-  var curLv = wikiparser.headingQue[wikiparser.headingQueCurr];
-  var lastLv = wikiparser.headingQue[wikiparser.headingQueCurr-1];
-  if(this.children[0].type == "TEXT"){
-    if(this.children[0].text.startsWith("=")){
-      this.children[0].text = this.children[0].text.substr(curLv);
-    }
-  }
-  if(this.children[this.children.length - 1].type == "TEXT"){
-    var t = this.children[this.children.length - 1].text;
-    if(t.endsWith("=")){
-      t = t.substring(0, t.length -curLv);
-      this.children[this.children.length - 1].text = t;
-    }
-  }
-  if(curLv < wikiparser.headingMin) wikiparser.headingMin = curLv;
-  var min = wikiparser.headingMin;
-  if(wikiparser.headingQueCurr===0){
-    wikiparser.headingNumbering[0] = 1;
-  }
-  if(wikiparser.headingQueCurr!==0){
-    wikiparser.headingNumbering[curLv-min]++;
-    if(curLv<lastLv){
-      for(var n = curLv-min+1;n<6;n++)
-      wikiparser.headingNumbering[n] = 0;
-    }
-  }
-  wikiparser.headingQueCurr++;
-  res.push("<h"+curLv+'><a href="#toc">');
-  for(var k in wikiparser.headingNumbering){
-    if(wikiparser.headingNumbering[k]!==0){
-      res.push(wikiparser.headingNumbering[k]);
-      res.push('.');
-    }
-  }
-  res.push("</a> ");
-  var res2 = [];
-  for(var i in this.children){
-    var it = this.children[i];
-    res2.push(it.Render(wikiparser));
-  }
-  res.push(res2.join("").trim());
-  res.push("</h"+curLv+">");
-  return res.join("");
-};
 //////////////////////////////
 function BoldNode(){
   this.type = "BOLD";
+  this.render = "bold";
   this.children = [];
 }
 BoldNode.prototype.Process = function(){
@@ -426,32 +115,10 @@ BoldNode.prototype.Process = function(){
     it.Process();
   }
 };
-BoldNode.prototype.Render = function(wikiparser){
-  var res = [];
-  if(this.children[0].type == "TEXT"){
-    if(this.children[0].text.startsWith("'''")){
-      this.children[0].text = this.children[0].text.substr(3);
-    }
-  }
-  if(this.children[this.children.length - 1].type == "TEXT"){
-    var t = this.children[this.children.length - 1].text;
-    if(t.endsWith("'''")){
-      t = t.substring(0, t.length -3);
-      this.children[this.children.length - 1].text = t;
-    }
-  }
-  res.push("<strong>");
-  for(var i in this.children){
-
-    var it = this.children[i];
-    res.push(it.Render(wikiparser));
-  }
-  res.push("</strong>");
-  return res.join("");
-};
 //////////////////////////////
 function ItalicNode(){
   this.type = "ITALIC";
+  this.render = "italic";
   this.children = [];
 }
 ItalicNode.prototype.Process = function(){
@@ -460,31 +127,10 @@ ItalicNode.prototype.Process = function(){
     it.Process();
   }
 };
-ItalicNode.prototype.Render = function(wikiparser){
-  var res = [];
-  if(this.children[0].type == "TEXT"){
-    if(this.children[0].text.startsWith("''")){
-      this.children[0].text = this.children[0].text.substr(2);
-    }
-  }
-  if(this.children[this.children.length - 1].type == "TEXT"){
-    var t = this.children[this.children.length - 1].text;
-    if(t.endsWith("'")){
-      t = t.substring(0, t.length -2);
-      this.children[this.children.length - 1].text = t;
-    }
-  }
-  res.push("<em>");
-  for(var i in this.children){
-    var it = this.children[i];
-    res.push(it.Render(wikiparser));
-  }
-  res.push("</em>");
-  return res.join("");
-};
 //////////////////////////////
 function TableNode(){
   this.NAME = "TABLE";
+  this.render = "table";
   this.children = [];
   this.cells = [];
   this.tableattr = "";
@@ -595,38 +241,6 @@ TableNode.prototype.Process = function(){
   }
   this.children = children;
 };
-TableNode.prototype.Render = function(wikiparser){
-  var res = [];
-  res.push("<table ");
-  res.push(this.tableattr);
-  res.push(">");
-  for(var i in this.cells){
-    var row = this.cells[i];
-    res.push("<tr>");
-    for(var j in row){
-      var cell = row[j];
-
-      res.push("<");
-      if(cell.isHead){
-        res.push("th ");
-      }
-      else{
-        res.push("td ");
-      }
-      res.push(cell.attr);
-      res.push(">");
-      for(var k in cell.children)
-      {
-        var iter = cell.children[k];
-        res.push(iter.Render(wikiparser));
-      }
-      res.push("</td>");
-    }
-    res.push("</tr>");
-  }
-  res.push("</table>");
-  return res.join("");
-};
 function TemplateNode(hooker){
   this.NAME = "TEMPLATE";
   this.children = [];
@@ -638,9 +252,9 @@ TemplateNode.prototype.Process = function(){
 TemplateNode.prototype.Render = function(wikiparser){
   return "[템플릿 있던 자리]";
 };
-////////////////////////////////////////////////////////////
 function ListNode(){
   this.children = [];
+  this.render = "list";
   this.NAME = "LIST";
 }
 ListNode.prototype.Process = function(){
@@ -649,170 +263,19 @@ ListNode.prototype.Process = function(){
     it.Process();
   }
 };
-ListNode.prototype.common = function(st1,st2){
-  var fl = st1.length;
-  var shorter = st2.length;
-  var Tags = {
-    "*" : "ul",
-    "#" : "ol",
-    ";" : "dl",
-    ":" : "dl"
-  };
-  if ( fl < shorter ) {
-    shorter = fl;
-  }
-  var i;
-  for ( i = 0; i < shorter; ++i ) {
-    if ( Tags[st1[i]] != Tags[st2[i]] ) {
-      break;
-    }
-  }
-  return i;
-};
-function ListSubNode(prefixStr,prefixChar,text,continueous){
-  this.prefixStr = prefixStr;
-  this.prefixChar = prefixChar;
-  this.children = [];
-  this.isContinuous = continueous;
-  this.text = text;
-  this.st1 = '';
-  this.st2 = '';
-  this.Tags = {
-    "*" : ["ul","li"],
-    "#" : ["ol","li"],
-    ";" : ["dl","dt"],
-    ":" : ["dl","dd"]
-  };
-}
-ListSubNode.prototype.push1 = function(res){
-  this.st1 = this.Tags[this.prefixChar][0];
-  res.push("\n<");
-  res.push(this.st1);
-  res.push(">");
-};
-ListSubNode.prototype.push2 = function(res){
-  this.st2 = this.Tags[this.prefixChar][1];
-  res.push("<");
-  res.push(this.st2);
-  res.push(">");
-};
-ListSubNode.prototype.pop1 = function(res){
-  if(this.st1!==''){
-    res.push("</");
-    res.push(this.st1);
-    res.push(">\n");
-    this.st1='';
-  }
-};
-ListSubNode.prototype.pop2 = function(res){
-  if(this.st2!==''){
-    res.push("</");
-    res.push(this.st2);
-    res.push(">");
-    this.st2='';
-  }
-};
-ListSubNode.prototype.Render = function(res){
-  if(!this.isContinuous) this.push1(res);
-  this.push2(res);
-  res.push(this.text);
-  for(var i in this.children){
-    var iter = this.children[i];
-    if(iter.isContinuous){
-      this.pop2(res);
-    }
-    iter.Render(res);
-  }
-  this.pop2(res);
-  this.pop1(res);
-};
-ListNode.prototype.Render = function(wikiparser){
-  var res = [];
-  var prfs = ["*","#",";",":"];
-  var subnodeStack = [];
-  var lines = [];
-  var stbuilder = [];
-  var i;
-  this.children[this.children.length-1].text+="\n";
-  for(i in this.children){
-    //라인별로 분리한다.
-    var iter = this.children[i];
-    if(iter.type != "TEXT"){
-      stbuilder.push(iter.Render(wikiparser));
-    }
-    else{
-      var text = iter.Render(wikiparser);
-      var tleng = text.length;
-      for(var j = 0;j<tleng;j++){
-        if(text[j]=="\n"){
-          lines.push(stbuilder.join(""));
-          stbuilder = [];
-        }
-        else{
-          stbuilder.push(text[j]);
-        }
-      }
-    }
-  }
-  lines.push("endoflist");
-  for(i in lines){
-    var line = lines[i];
-    var lineleng = line.length;
-    var k;
-    for(k = 0;k<lineleng;k++){
-      if(prfs.indexOf(line[k]) === -1){
-        if(subnodeStack.length===0){
-          subnodeStack.push(new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),false));
-        }
-        else{
-          while(subnodeStack.length>0){
-            var last = subnodeStack[subnodeStack.length-1];
-            var x = this.common(last.prefixStr,line.substr(0,k));
-            if(x==last.prefixStr.length){
-              var sn = new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),x==k);
-              last.children.push(sn);
-              subnodeStack.push(sn);
-              break;
-            }
-            else{
-              if(subnodeStack.length==1){
-                subnodeStack.pop().Render(res);
-              }
-              else subnodeStack.pop();
-            }
-          }
-          if(subnodeStack.length===0){
-            subnodeStack.push(new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),false));
-          }
-        }
-        break;
-      }
-    }
-  }
-  return res.join("");
-};
 function HRNode(){
   this.children = [];
+  this.render = "hr";
   this.NAME = "HR";
 }
 HRNode.prototype.Process = function(){
 
 };
-HRNode.prototype.Render = function(wikiparser){
-  return "<hr />";
-};
 //////////////////////////////
 function LibertyMark(){
+  this.render = "liberty";
   this.children = [];
 }
-LibertyMark.prototype.Render = function(wikiparser){
-  var res = [];
-  for(var i in this.children){
-    var iter = this.children[i];
-    res.push(iter.Render(wikiparser));
-  }
-  return res.join("");
-};
 LibertyMark.prototype.Process = function(){
   var res = [];
   for(var i in this.children){
@@ -976,7 +439,7 @@ WikiParser.prototype.OnlyText = function(node){
   var res = [];
   function recursion(current){
     if(current.type=="TEXT"){
-      res.push(current.Render(this));
+      res.push(current.text);
     }
     else{
       for(var i in current.children){
@@ -1364,7 +827,6 @@ function AfterRender(rendered){
   return rendered;
 }
 
-
 function isNull(obj){
   return obj === null || obj === undefined;
 }
@@ -1397,7 +859,7 @@ function Parse(text){
   }
   wikiparser.AddHooker(new NowikiHooker());
   wikiparser.AddHooker(new PreTagHooker());
-  wikiparser.AddHooker(new TemplateHooker());
+//  wikiparser.AddHooker(new TemplateHooker());
   wikiparser.AddHooker(new TableHooker());
   wikiparser.AddHooker(new BoldTagHooker());
   wikiparser.AddHooker(new ItalicHooker());
@@ -1415,13 +877,23 @@ function Parse(text){
   //서비스 언어를 설정
   wikiparser.local = "korean";
   wikiparser.AddInterwiki("./interwiki.json");
-  //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
+
   var a = wikiparser.Parse(text);
+  var rendered = '';
+  var Renderer = require('./wikiRenderer.js');
+  Renderer.Render(wikiparser, a, function (res) {
+    rendered = res;
+  });
+  var res = AfterRender(rendered);
+  return res;
+  /*
+  //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
   var rendered = a.Render(wikiparser);
   var res = AfterRender(rendered);
   console.log("asdfffaa");
   //window.document.getElementById("preview").innerHTML = res;
   return res;
+  */
   //for node connect
 }
 module.exports.Parse = Parse;
