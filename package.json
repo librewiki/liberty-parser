@@ -1,16 +1,16 @@
 {
   "name": "liberty-parser",
-  "version": "0.0.2",
+  "version": "0.1",
   "description": "Wiki text parser",
   "main": "liberty-parser.js",
   "author": {
-    "name": "Tanin Na Nakorn",
-    "email": "tanin47@yahoo.com"
+    "name": "",
+    "email": ""
   },
   "contributors": [
     {
-      "name": "Dav Glass",
-      "email": "davglass@gmail.com"
+      "name": "",
+      "email": ""
     }
   ],
   "keywords": [
@@ -19,38 +19,38 @@
     "parser"
   ],
   "bugs": {
-    "url": "https://github.com/davglass/wiky.js/issues"
+    "url": ""
   },
   "licenses": [
     {
-      "type": "WTFPL",
-      "url": "http://sam.zoy.org/wtfpl/"
+      "type": "MIT",
+      "url": "http://opensource.org/licenses/MIT"
     }
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/davglass/wiky.js.git"
+    "url": "https://gitlab.com/LibreDev/LibertyParser.git"
   },
-  "readme": "Wiky.js - a javascript library to convert Wiki Markup language to HTML.\n=======================\n\n(It is buggy, please use with care)\n\nWiky.js is a javascript library that converts Wiki Markup language to HTML.\n\n\nHow to use it\n-------------------\nInclude wiki.js into your HTML file. Wiky.js has only one function, which is wiky.process(wikitext).\n\nPlease see index.html for an example.\n\n*wiky.js does not depend on jQuery, which is included for testing purpose.\n\n\n\nSupported Syntax\n-------------------\n* == Heading ==\n* === Subheading ===\n* [http://www.url.com Name of URLs]\n* [[File:http://www.url.com/image.png Alternative Text]]\n* -------------------- (Horizontal line)\n* : (Indentation)\n* # Ordered bullet point\n* * Unordered bullet point\n\n\n\nContributors\n-------------------\n\nTanin Na Nakorn\n\nTanun Niyomjit (Designer)\n\nDav Glass [davglass]\n\nNPM\n---\n\n```\n$ npm install wiky.js\n\n$ npm install https://github.com/tanin47/wiky.js/tarball/master\n```\n\n```\nvar wiky = require('wiky.js');\n\nvar html = wiky.process('<string of wiki code>', {});\n\nvar html = wiky.process('<string of wiki code>', { 'link-image': false });\n```\n\n\nOptions\n-------\n\nIt only supports one option at the moment: `link-image`\n\nSetting this to `false` will tell `wiky.js` to not imbed CSS into the markup for link icons.\n\nLicense\n---------\n\nDo What The Fuck You Want To Public License (http://sam.zoy.org/wtfpl/)\n\n0. You just DO WHAT THE FUCK YOU WANT TO.\n\n",
-  "readmeFilename": "Readme.md",
-  "_id": "wiky.js@0.0.1",
+  "readme": "",
+  "readmeFilename": "",
+  "_id": "",
   "dist": {
-    "shasum": "adf44478442faf78c71b4fd9ba024dfac1f8297d",
-    "tarball": "http://registry.npmjs.org/wiky.js/-/wiky.js-0.0.1.tgz"
+    "shasum": "",
+    "tarball": ""
   },
-  "_npmVersion": "1.1.69",
+  "_npmVersion": "",
   "_npmUser": {
-    "name": "davglass",
-    "email": "davglass@gmail.com"
+    "name": "",
+    "email": ""
   },
   "maintainers": [
     {
-      "name": "davglass",
-      "email": "davglass@gmail.com"
+      "name": "",
+      "email": ""
     }
   ],
   "directories": {},
-  "_shasum": "adf44478442faf78c71b4fd9ba024dfac1f8297d",
-  "_resolved": "https://registry.npmjs.org/wiky.js/-/wiky.js-0.0.1.tgz",
-  "_from": "wiky.js@*"
+  "_shasum": "a",
+  "_resolved": "",
+  "_from": ""
 }

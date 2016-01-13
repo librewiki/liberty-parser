@@ -169,7 +169,7 @@ Render.extlink = function (wikiparser, node) {
   else{
     showText = innerParsed.slice(1).join(" ");
   }
-  if(linkText.startsWith("http://")||linkText.startsWith("https://")){
+  if(linkText.search(/(ftp|http|https):\/\/.*/)!==-1){
     res.push('<a style="color:#008000;" href="');
     res.push(linkText);
     res.push('">');

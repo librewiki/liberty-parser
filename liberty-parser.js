@@ -1,11 +1,10 @@
 "USE STRICT";
-//*EDITING BY DAMEZUMA, NESSUN
-//*author DAMEZUMA, NESSUN
-//publish by MIT
-//각 클래스 메소드 별 역할
-//Render() -> 노드를 HTML로 변환한다.
-//Process()-> 노드를 HTML로 변환하기 이전에 해야 할 일들을 한다.
-//테이블의 경우 각 셀을 분리하고, 템플릿의 경우에는 틀 이름과 매개변수를 정리한다
+/*
+*EDITING BY DAMEZUMA, NESSUN
+*author DAMEZUMA, NESSUN
+*published under the MIT license
+*/
+
 function NowikiNode(){
   this.type = "NOWIKI";
   this.render = "nowiki";
@@ -22,7 +21,6 @@ function PreTagNode() {
 PreTagNode.prototype.Process = function () {
 	var stack = [];
 };
-//////////////////////////////
 function TextNode(text){
   this.type = "TEXT";
   this.render = "text";
@@ -31,7 +29,6 @@ function TextNode(text){
 TextNode.prototype.Process = function(wikiparser){
 
 };
-//////////////////////////////
 function BRNode(){
   this.type = "BR";
   this.render = "brtag";
@@ -43,7 +40,6 @@ BRNode.prototype.Process = function(){
     it.Process();
 	}
 };
-//////////////////////////////
 function LinkNode(){
   this.type = "LINK";
   this.render = "link";
@@ -66,7 +62,6 @@ ExtLinkNode.prototype.Process = function(){
 		it.Process();
 	}
 };
-//////////////////////////////
 function RefNode(){
   this.type = "REF";
   this.render = "ref";
@@ -78,7 +73,6 @@ RefNode.prototype.Process = function(wikiparser){
     it.Process();
   }
 };
-//////////////////////////////
 function ReferencesNode(){
   this.type = "REFERENCES";
   this.render = "references";
@@ -90,7 +84,6 @@ ReferencesNode.prototype.Process = function(wikiparser){
     it.Process();
   }
 };
-//////////////////////////////
 function HeadingNode(){
   this.type = "HEADING";
   this.render = "heading";
@@ -102,7 +95,6 @@ HeadingNode.prototype.Process = function(wikiparser){
     it.Process();
   }
 };
-//////////////////////////////
 function BoldNode(){
   this.type = "BOLD";
   this.render = "bold";
@@ -114,7 +106,6 @@ BoldNode.prototype.Process = function(){
     it.Process();
   }
 };
-//////////////////////////////
 function ItalicNode(){
   this.type = "ITALIC";
   this.render = "italic";
@@ -126,7 +117,6 @@ ItalicNode.prototype.Process = function(){
     it.Process();
   }
 };
-//////////////////////////////
 function TableNode(){
   this.NAME = "TABLE";
   this.render = "table";
@@ -240,17 +230,6 @@ TableNode.prototype.Process = function(){
   }
   this.children = children;
 };
-function TemplateNode(hooker){
-  this.NAME = "TEMPLATE";
-  this.children = [];
-  this.hooker = hooker;
-}
-TemplateNode.prototype.Process = function(){
-
-};
-TemplateNode.prototype.Render = function(wikiparser){
-  return "[템플릿 있던 자리]";
-};
 function ListNode(){
   this.children = [];
   this.render = "list";
@@ -270,7 +249,6 @@ function HRNode(){
 HRNode.prototype.Process = function(){
 
 };
-//////////////////////////////
 function LibertyMark(){
   this.render = "liberty";
   this.children = [];
@@ -550,7 +528,6 @@ WikiParser.prototype.Parse = function(text){
   stack[0].Process();
   return stack[0];
 };
-//////////////////////////////
 function NowikiHooker(){
   this.NAME = "NOWIKI HOOKER";
   this.NODE = NowikiNode;
@@ -558,24 +535,6 @@ function NowikiHooker(){
 NowikiHooker.prototype.DoMark = function(wikiparser,text){
   wikiparser.DoBasicMarkTag(text, this, "nowiki");
 };
-//////////////////////////////
-function TemplateHooker(){
-  this.NAME = "TAMPLATE HOOKER";
-  this.NODE = TemplateNode;
-}
-TemplateHooker.prototype.DoMark = function(wikiparser, text){
-  var idx = 0;
-  while((idx = text.indexOf("{{", idx)) != -1){
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
-    idx += 2;
-  }
-  idx = 0;
-  while((idx = text.indexOf("}}", idx)) != -1){
-    idx += 2;
-    wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
-  }
-};
-//////////////////////////////
 function TableHooker(){
   this.NAME = "TABLE HOOKER";
   this.NODE = TableNode;
@@ -592,7 +551,6 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
     wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
   }
 };
-//////////////////////////////
 function BoldTagHooker(){
   this.NAME = "BOLDTAG HOOKER";
   this.NODE = BoldNode;
@@ -628,7 +586,6 @@ BoldTagHooker.prototype.OnTagReversing = function(markList,text,tagType,idx){
   }
   return res;
 };
-//////////////////////////////
 function ItalicHooker(){
   this.NAME = "ITALIC HOOKER";
   this.NODE = ItalicNode;
@@ -667,7 +624,6 @@ ItalicHooker.prototype.OnTagReversing = function(markList,text,tagType,idx){
   }
   return res;
 };
-//////////////////////////////
 function HeadingHooker(){
   this.NAME = "HEADING HOOKER";
   this.NODE = HeadingNode;
@@ -699,7 +655,6 @@ HeadingHooker.prototype.DoMark = function(wikiparser,text){
     wikiparser.headingQueFront++;
   }
 };
-//////////////////////////////
 function RefHooker(){
   this.NAME = "REF HOOKER";
   this.NODE = RefNode;
@@ -707,7 +662,6 @@ function RefHooker(){
 RefHooker.prototype.DoMark = function(wikiparser,text){
   wikiparser.DoBasicMarkTag(text, this, "ref");
 };
-//////////////////////////////
 function ReferencesHooker(){
   this.NAME = "REFERENCES HOOKER";
   this.NODE = ReferencesNode;
@@ -715,7 +669,6 @@ function ReferencesHooker(){
 ReferencesHooker.prototype.DoMark = function(wikiparser,text){
   wikiparser.DoBasicMarkStandaloneTag(text, this, "references");
 };
-//////////////////////////////
 function BRTagHooker(){
   this.NAME = "BRTAG HOOKER";
   this.NODE = BRNode;
@@ -727,7 +680,6 @@ BRTagHooker.prototype.DoMark = function(wikiparser,text){
     idx += 2;
   }
 };
-//////////////////////////////
 function LinkHooker(){
   this.NAME = "LINK HOOKER";
   this.NODE = LinkNode;
@@ -744,7 +696,6 @@ LinkHooker.prototype.DoMark = function(wikiparser,text){
     wikiparser.AddMark(new HookMarker(this, MARK_TYPE.CLOSE_TAG,idx));
   }
 };
-//////////////////////////////
 function ExtLinkHooker(){
   this.NAME = "EXTERNAL LINK HOOKER";
   this.NODE = ExtLinkNode;
@@ -765,7 +716,6 @@ ExtLinkHooker.prototype.DoMark = function(wikiparser,text){
     }else idx += 2;
   }
 };
-//////////////////////////////
 function ListHooker(){
   this.NAME = "LIST HOOKER";
   this.NODE = ListNode;
@@ -790,7 +740,6 @@ ListHooker.prototype.DoMark = function(wikiparser, text){
     idx += line.length + 1;
   }
 };
-//////////////////////////////
 function HRHooker(){
   this.NAME = "HR HOOKER";
   this.NODE = HRNode;
@@ -818,7 +767,6 @@ PreTagHooker.prototype.DoMark = function (wikiparser, text) {
 	wikiparser.DoBasicMarkTag(text, this, "pre");
 };
 
-//////////////////////////////
 function AfterRender(rendered){
   //렌더링 이후에 다 못한 처리를 한다
   var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
@@ -827,12 +775,9 @@ function AfterRender(rendered){
   }
   return rendered;
 }
-
 function isNull(obj){
   return obj === null || obj === undefined;
 }
-
-//////////////////////////////
 function ParserInit(text,namespace,title){
   var wikiparser = new WikiParser();
   wikiparser.namespace = namespace;
