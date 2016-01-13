@@ -835,9 +835,6 @@ function isNull(obj){
 //////////////////////////////
 function ParserInit(text,namespace,title){
   var wikiparser = new WikiParser();
-  if(isNull(wikiparser.constructor)){
-    throw "The javascript interpreter is not support dameparser! it have to support constructor property";
-  }
   wikiparser.namespace = namespace;
   wikiparser.title = title;
   wikiparser.wikitext = text;
@@ -855,26 +852,27 @@ module.exports.ParserInit = ParserInit;
 function TemplateCheck(wikiparser){
   wikiparser.templateList = [];
   var idx = 0;
-  var nowikiOpen = wikiparser.wikitext.indexOf("<nowiki");
-  var preOpen = wikiparser.wikitext.indexOf("<pre");
-  nowikiClose = wikiparser.wikitext.indexOf("</nowiki",nowikiOpen);
-  preClose = wikiparser.wikitext.indexOf("</pre",preOpen);
-  while((idx = wikiparser.wikitext.indexOf("{{", idx)) != -1){
-    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)||wikiparser.wikitext.charAt(idx+2)=="{"){
+  var lower = wikiparser.wikitext.toLowerCase();
+  var nowikiOpen = lower.indexOf("<nowiki");
+  var preOpen = lower.indexOf("<pre");
+  nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
+  preClose = lower.indexOf("</pre",preOpen);
+  while((idx = lower.indexOf("{{", idx)) != -1){
+    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)||lower.charAt(idx+2)=="{"){
       idx +=2;
       continue;
     }
     var open = idx+2;
-    if((idx = wikiparser.wikitext.indexOf("}}", idx)) != -1){
+    if((idx = lower.indexOf("}}", idx)) != -1){
       var close = idx;
       var templateText = wikiparser.wikitext.substring(open,close);
       var templateArr = templateText.split("|");
       templateArr.splice(0,0,'',open-2,close);
       wikiparser.templateList.push(templateArr);
-      nowikiOpen = wikiparser.wikitext.indexOf("<nowiki",close);
-      preOpen = wikiparser.wikitext.indexOf("<pre",close);
-      nowikiClose = wikiparser.wikitext.indexOf("</nowiki",nowikiOpen);
-      preClose = wikiparser.wikitext.indexOf("</pre",preOpen);
+      nowikiOpen = lower.indexOf("<nowiki",close);
+      preOpen = lower.indexOf("<pre",close);
+      nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
+      preClose = lower.indexOf("</pre",preOpen);
     }else{
       break;
     }
@@ -898,10 +896,20 @@ function TemplateReplace(wikiparser){
   wikiparser.wikitext = sb.join("");
   return wikiparser;
 }
+function TemplatePatialTags(template){
+  var text = template[0];
+  text=text.replace(/<\/?includeonly>/gi,"");
+  text=text.replace(/.*<onlyinclude>(.*)<\/onlyinclude>.*/gi,'$1');
+  text=text.replace(/<noinclude>.*<\/noinclude>/gi,"");
+  template[0]=text;
+}
 function TemplateParameterReplace(template){
+  console.log(template);
+  TemplatePatialTags(template);
   console.log(template);
   var arrObj = [template[3]];
   var text = template[0];
+  var lower = text.toLowerCase();
   for (var i = 4; i < template.length; i++) {
     var iter = template[i];
     var temp = iter.split("=");
@@ -913,10 +921,10 @@ function TemplateParameterReplace(template){
   }
   var idx = 0;
   var ParamArr = [];
-  var nowikiOpen = text.indexOf("<nowiki");
-  var preOpen = text.indexOf("<pre");
-  nowikiClose = text.indexOf("</nowiki",nowikiOpen);
-  preClose = text.indexOf("</pre",preOpen);
+  var nowikiOpen = lower.indexOf("<nowiki");
+  var preOpen = lower.indexOf("<pre");
+  nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
+  preClose = lower.indexOf("</pre",preOpen);
   while((idx = text.indexOf("{{{", idx)) != -1){
     if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)){
       idx +=3;
@@ -929,10 +937,10 @@ function TemplateParameterReplace(template){
       var paramName = param[0];
       if(isNull(param[1])) param[1]="";
       ParamArr.push([paramName,open-3,close,param[1]]);
-      nowikiOpen = text.indexOf("<nowiki",close);
-      preOpen = text.indexOf("<pre",close);
-      nowikiClose = text.indexOf("</nowiki",nowikiOpen);
-      preClose = text.indexOf("</pre",preOpen);
+      nowikiOpen = lower.indexOf("<nowiki",close);
+      preOpen = lower.indexOf("<pre",close);
+      nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
+      preClose = lower.indexOf("</pre",preOpen);
     }else{
       break;
     }
