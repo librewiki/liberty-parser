@@ -860,7 +860,7 @@ function TemplateCheck(wikiparser){
   nowikiClose = wikiparser.wikitext.indexOf("</nowiki",nowikiOpen);
   preClose = wikiparser.wikitext.indexOf("</pre",preOpen);
   while((idx = wikiparser.wikitext.indexOf("{{", idx)) != -1){
-    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)){
+    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)||wikiparser.wikitext.charAt(idx+2)=="{"){
       idx +=2;
       continue;
     }
@@ -891,12 +891,67 @@ function TemplateReplace(wikiparser){
   for (var i = 0; i < wikiparser.templateList.length; i++) {
     open = wikiparser.templateList[i][1];
     sb.push(wikiparser.wikitext.substring(close,open));
-    sb.push(wikiparser.templateList[i][0]);
+    sb.push(TemplateParameterReplace(wikiparser.templateList[i]));
     close = wikiparser.templateList[i][2]+2;
   }
   sb.push(wikiparser.wikitext.substring(close));
   wikiparser.wikitext = sb.join("");
   return wikiparser;
+}
+function TemplateParameterReplace(template){
+  console.log(template);
+  var arrObj = [template[3]];
+  var text = template[0];
+  for (var i = 4; i < template.length; i++) {
+    var iter = template[i];
+    var temp = iter.split("=");
+    if(!isNull(temp[1])){
+      arrObj[temp[0]]=temp[1];
+    }else{
+      arrObj.push(iter);
+    }
+  }
+  var idx = 0;
+  var ParamArr = [];
+  var nowikiOpen = text.indexOf("<nowiki");
+  var preOpen = text.indexOf("<pre");
+  nowikiClose = text.indexOf("</nowiki",nowikiOpen);
+  preClose = text.indexOf("</pre",preOpen);
+  while((idx = text.indexOf("{{{", idx)) != -1){
+    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)){
+      idx +=3;
+      continue;
+    }
+    var open = idx+3;
+    if((idx = text.indexOf("}}}", idx)) != -1){
+      var close = idx;
+      var param = text.substring(open,close).split("|");
+      var paramName = param[0];
+      if(isNull(param[1])) param[1]="";
+      ParamArr.push([paramName,open-3,close,param[1]]);
+      nowikiOpen = text.indexOf("<nowiki",close);
+      preOpen = text.indexOf("<pre",close);
+      nowikiClose = text.indexOf("</nowiki",nowikiOpen);
+      preClose = text.indexOf("</pre",preOpen);
+    }else{
+      break;
+    }
+    idx += 3;
+  }
+  var sb = [];
+  var op=0, cl=0;
+  for (var k = 0; k < ParamArr.length; k++) {
+    op = ParamArr[k][1];
+    sb.push(text.substring(cl,op));
+    if(isNull(arrObj[ParamArr[k][0]])){
+      sb.push(ParamArr[k][3]);
+    }else{
+      sb.push(arrObj[ParamArr[k][0]]);
+    }
+    cl = ParamArr[k][2]+3;
+  }
+  sb.push(text.substring(cl));
+  return sb.join("");
 }
 module.exports.TemplateReplace = TemplateReplace;
 function DoParse(wikiparser){
