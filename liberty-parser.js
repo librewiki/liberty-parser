@@ -888,20 +888,17 @@ function TemplateReplace(wikiparser){
   for (var i = 0; i < wikiparser.templateList.length; i++) {
     open = wikiparser.templateList[i][1];
     sb.push(wikiparser.wikitext.substring(close,open));
-    console.log('d1sfe',wikiparser.templateList[i][0]);
     sb.push(wikiparser.templateList[i][0]);
     close = wikiparser.templateList[i][2]+2;
   }
   sb.push(wikiparser.wikitext.substring(close));
   wikiparser.wikitext = sb.join("");
-  console.log('do22ne',wikiparser.wikitext);
   return wikiparser;
 }
 module.exports.TemplateReplace = TemplateReplace;
 function DoParse(wikiparser){
   wikiparser.AddHooker(new NowikiHooker());
   wikiparser.AddHooker(new PreTagHooker());
-//  wikiparser.AddHooker(new TemplateHooker());
   wikiparser.AddHooker(new TableHooker());
   wikiparser.AddHooker(new BoldTagHooker());
   wikiparser.AddHooker(new ItalicHooker());
@@ -923,49 +920,3 @@ function DoParse(wikiparser){
   return res;
 }
 module.exports.DoParse = DoParse;
-
-function Parse(text){
-  var wikiparser = new WikiParser();
-  wikiparser.wikitext = text;
-  if(isNull(wikiparser.constructor)){
-    throw "The javascript interpreter is not support dameparser! it have to support constructor property";
-  }
-  wikiparser.AddHooker(new NowikiHooker());
-  wikiparser.AddHooker(new PreTagHooker());
-//  wikiparser.AddHooker(new TemplateHooker());
-  wikiparser.AddHooker(new TableHooker());
-  wikiparser.AddHooker(new BoldTagHooker());
-  wikiparser.AddHooker(new ItalicHooker());
-  wikiparser.AddHooker(new BRTagHooker());
-  wikiparser.AddHooker(new LinkHooker());
-  wikiparser.AddHooker(new ExtLinkHooker());
-  wikiparser.AddHooker(new HeadingHooker());
-  wikiparser.AddHooker(new RefHooker());
-  wikiparser.AddHooker(new ReferencesHooker());
-  wikiparser.AddHooker(new ListHooker());
-  wikiparser.AddHooker(new HRHooker());
-  //지원하고자 하는 언어를 추가
-  wikiparser.Addi18n("english");
-  wikiparser.Addi18n("korean");
-  //서비스 언어를 설정
-  wikiparser.local = "korean";
-  wikiparser.AddInterwiki("./interwiki.json");
-  var a = wikiparser.Parse(text);
-  var rendered = '';
-  var Renderer = require('./wikiRenderer.js');
-  Renderer.Render(wikiparser, a, function (res) {
-    rendered = res;
-  });
-  var res = AfterRender(rendered);
-  return res;
-  /*
-  //위키파서의 파서메소드가 반환하는 것은 LibertyMark객체이다.
-  var rendered = a.Render(wikiparser);
-  var res = AfterRender(rendered);
-  console.log("asdfffaa");
-  //window.document.getElementById("preview").innerHTML = res;
-  return res;
-  */
-  //for node connect
-}
-module.exports.Parse = Parse;
