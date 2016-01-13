@@ -451,7 +451,6 @@ WikiParser.prototype.ReverseTagType = function(text, fromIdx, nodeClass){
   }
 };
 WikiParser.prototype.Parse = function(text){
-  //여기로 위키텍스트 들어간다
   for(var i in this.hookers){
     //후커 돌면서 DoMark 실행
     var hooker = this.hookers[i];
@@ -465,10 +464,7 @@ WikiParser.prototype.Parse = function(text){
     var iter = this.markList[i];
     switch(iter.markType){
       case MARK_TYPE.CLOSE_TAG:{
-        if(stack.length == 1){
-          continue;
-        }
-
+        if(stack.length == 1) continue;
         var lastNode = stack[stack.length - 1];
         //짝이 안맞는 경우도 있을 수 있다
         var iterNodeName = iter.hooker.NODE;
@@ -729,12 +725,12 @@ ListHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   for(var i in lines){
     var line = lines[i];
-    if( isListStart == -1 && (line.startsWith("*") || line.startsWith("#") || line.startsWith(";") || line.startsWith(":"))){
+    if(isListStart == -1 && (line.startsWith("*") || line.startsWith("#") || line.startsWith(";") || line.startsWith(":"))){
       isListStart = i;
       wikiparser.AddMark(new HookMarker(this,MARK_TYPE.OPEN_TAG,idx));
     }
     else if(isListStart != -1 && !(line.startsWith("*") || line.startsWith("#") || line.startsWith(";") || line.startsWith(":"))){
-      wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG, idx - 1));
+      wikiparser.AddMark(new HookMarker(this,MARK_TYPE.CLOSE_TAG, idx));
       isListStart = -1;
     }
     idx += line.length + 1;

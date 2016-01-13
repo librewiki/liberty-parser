@@ -28,7 +28,7 @@ Render.text = function (wikiparser, node) {
     var texts = lines[k].split(" ");
     var renderedLine = [];
     for (var i=0;i<texts.length;i++){
-      if(texts[i].startsWith("http://")||texts[i].startsWith("https://")){
+      if(texts[i].search(/((http|https|ftp|sftp|gopher|telnet|news|mailto|ed2k):\/\/|magnet:).*/i)!==-1){
         renderedLine.push('<a style="color:#008000;" href="');
         renderedLine.push(texts[i]);
         renderedLine.push('">');
@@ -169,7 +169,7 @@ Render.extlink = function (wikiparser, node) {
   else{
     showText = innerParsed.slice(1).join(" ");
   }
-  if(linkText.search(/(ftp|http|https):\/\/.*/)!==-1){
+  if(linkText.search(/((http|https|ftp|sftp|gopher|telnet|news|mailto|ed2k):\/\/|magnet:).*/i)!==-1){
     res.push('<a style="color:#008000;" href="');
     res.push(linkText);
     res.push('">');
@@ -211,7 +211,9 @@ Render.ref = function (wikiparser, node) {
       break;
     }
   }
-  if(alreadyNamed===false) wikiparser.referContent.push(content);
+  if(alreadyNamed===false){
+    j = wikiparser.referContent.push(content)-1;
+  }
   res.push('<sup id="cite_ref-');
   if(named){
     res.push(wikiparser.referNaming[j][0]);
