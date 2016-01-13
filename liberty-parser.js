@@ -852,6 +852,7 @@ function ParserInit(text,namespace,title){
 }
 module.exports.ParserInit = ParserInit;
 function TemplateCheck(wikiparser){
+  wikiparser.templateList = [];
   var idx = 0;
   var nowikiOpen = wikiparser.wikitext.indexOf("<nowiki");
   var preOpen = wikiparser.wikitext.indexOf("<pre");
