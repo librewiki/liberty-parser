@@ -848,6 +848,7 @@ function ParserInit(text,namespace,title){
   //서비스 언어를 설정
   wikiparser.local = "korean";
   wikiparser.AddInterwiki("./interwiki.json");
+  wikiparser.Templatedepth = 0;
   return wikiparser;
 }
 module.exports.ParserInit = ParserInit;
@@ -884,6 +885,7 @@ function TemplateCheck(wikiparser){
 }
 module.exports.TemplateCheck = TemplateCheck;
 function TemplateReplace(wikiparser){
+  wikiparser.Templatedepth++;
   var sb = [];
   var open = 0, close = 0;
   for (var i = 0; i < wikiparser.templateList.length; i++) {
