@@ -20,6 +20,10 @@ Render.pretag = function (wikiparser, node) {
   .replace(/&lt;pre&gt;/gi, "<pre>").replace(/&lt;\/pre&gt;/gi, "</pre>")
   .replace(/&lt;nowiki&gt;/gi,"<nowiki>").replace(/&lt;\/nowiki&gt;/gi,"</nowiki>");
 };
+Render.math = function (wikiparser, node) {
+  var res = wikiparser.OnlyText(node);
+  return res;
+};
 Render.text = function (wikiparser, node) {
   var res = [];
   var isbn = /\d{3}-\d-\d{8}-\d|\d{2}-\d{3}-\d{4}-\d/;

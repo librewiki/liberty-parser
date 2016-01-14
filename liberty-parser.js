@@ -21,6 +21,14 @@ function PreTagNode() {
 PreTagNode.prototype.Process = function () {
 	var stack = [];
 };
+function MathNode(){
+  this.type = "MATH";
+  this.render = "math";
+  this.children = [];
+}
+MathNode.prototype.Process = function(){
+  var stack = [];
+};
 function TextNode(text){
   this.type = "TEXT";
   this.render = "text";
@@ -531,6 +539,20 @@ function NowikiHooker(){
 NowikiHooker.prototype.DoMark = function(wikiparser,text){
   wikiparser.DoBasicMarkTag(text, this, "nowiki");
 };
+function PreTagHooker(){
+ 	this.NAME = "PRETAG HOOKER";
+	this.NODE = PreTagNode;
+}
+PreTagHooker.prototype.DoMark = function (wikiparser, text) {
+	wikiparser.DoBasicMarkTag(text, this, "pre");
+};
+function MathHooker(){
+ 	this.NAME = "Math HOOKER";
+	this.NODE = MathNode;
+}
+MathHooker.prototype.DoMark = function (wikiparser, text) {
+	wikiparser.DoBasicMarkTag(text, this, "math");
+};
 function TableHooker(){
   this.NAME = "TABLE HOOKER";
   this.NODE = TableNode;
@@ -755,20 +777,25 @@ HRHooker.prototype.DoMark = function(wikiparser, text){
     idx += line.length + 1;
   }
 };
-function PreTagHooker(){
- 	this.NAME = "PRETAG HOOKER";
-	this.NODE = PreTagNode;
-}
-PreTagHooker.prototype.DoMark = function (wikiparser, text) {
-	wikiparser.DoBasicMarkTag(text, this, "pre");
-};
 
-function AfterRender(rendered){
+function AfterRender(rendered,wikiparser){
   //렌더링 이후에 다 못한 처리를 한다
   var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
   for(var i in rules){
     rendered = rendered.replace(rules[i][0], rules[i][1]);
   }
+  var reg = /<_(nowiki|pre|math)>(\d)_(\d+)(?:<\/_(?:\1)[^>]*>)/gi;
+  var cnt=0;
+  rendered = rendered.replace(reg,function($0,$1,$2,$3){
+    console.log("sdf",$0,$1,$2,$3);
+    var nowikitext = wikiparser.nowikiMatch[$2][$3];
+    nowikitext = nowikitext.replace(/<(?!((\/?)(nowiki|pre|math)))/gi,"&lt;").replace(/([^(nowiki|pre|math)])>/gi,"$1&gt;");
+    if($1=="math"){
+      nowikitext = nowikitext.replace("<math>","[math]").replace("</math>","[/math]");
+    }
+    return nowikitext;
+  });
+  var idx = 0;
   return rendered;
 }
 function isNull(obj){
@@ -787,19 +814,36 @@ function ParserInit(text,namespace,title){
   wikiparser.local = "korean";
   wikiparser.AddInterwiki("./interwiki.json");
   wikiparser.Templatedepth = 0;
+  wikiparser.nowikiMatch = [];
+  NowikiProcess(wikiparser);
   return wikiparser;
 }
 module.exports.ParserInit = ParserInit;
+function NowikiProcess(wikiparser){
+  var text = wikiparser.wikitext;
+  var re = '<_$1>'+wikiparser.Templatedepth+'</_$1>';
+  var cnt = 0;
+  var Match = text.match(/(?:<(nowiki|pre|math)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)(.*?)(?:<\/(?:\1)[^>]*>)/gi);
+  text = text.replace(/(?:<(nowiki|pre|math)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)(.*?)(?:<\/(?:\1)[^>]*>)/gi,function ($0,$1,$2) {
+    var res = '<_'+$1+'>'+wikiparser.Templatedepth+'_'+cnt+'</_'+$1+'>';
+    cnt++;
+    return res;
+  });
+  wikiparser.wikitext = text;
+  wikiparser.nowikiMatch.push(Match);
+}
 function TemplateCheck(wikiparser){
   wikiparser.templateList = [];
   var idx = 0;
   var lower = wikiparser.wikitext.toLowerCase();
-  var nowikiOpen = lower.indexOf("<nowiki");
+  /*var nowikiOpen = lower.indexOf("<nowiki");
   var preOpen = lower.indexOf("<pre");
-  nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
-  preClose = lower.indexOf("</pre",preOpen);
+  var mathOpen = lower.indexOf("<math");
+  var nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
+  var preClose = lower.indexOf("</pre",preOpen);
+  var mathClose = lower.indexOf("</math",mathOpen);*/
   while((idx = lower.indexOf("{{", idx)) != -1){
-    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)||lower.charAt(idx+2)=="{"){
+    if(lower.charAt(idx+2)=="{"){
       idx +=2;
       continue;
     }
@@ -810,10 +854,12 @@ function TemplateCheck(wikiparser){
       var templateArr = templateText.split("|");
       templateArr.splice(0,0,'',open-2,close);
       wikiparser.templateList.push(templateArr);
-      nowikiOpen = lower.indexOf("<nowiki",close);
+      /*nowikiOpen = lower.indexOf("<nowiki",close);
+      mathOpen = lower.indexOf("<math",close);
       preOpen = lower.indexOf("<pre",close);
       nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
       preClose = lower.indexOf("</pre",preOpen);
+      mathClose = lower.indexOf("</math",mathOpen);*/
     }else{
       break;
     }
@@ -835,19 +881,20 @@ function TemplateReplace(wikiparser){
   }
   sb.push(wikiparser.wikitext.substring(close));
   wikiparser.wikitext = sb.join("");
+  NowikiProcess(wikiparser);
   return wikiparser;
 }
 function TemplatePatialTags(template){
   var text = template[0];
+  console.log("start",text);
   text=text.replace(/<\/?includeonly>/gi,"");
-  text=text.replace(/.*<onlyinclude>(.*)<\/onlyinclude>.*/gi,'$1');
+  text=text.replace(/(?:.|\n)*<onlyinclude>(.*)<\/onlyinclude>(?:.|\n)*/gi,'$1');
   text=text.replace(/<noinclude>.*<\/noinclude>/gi,"");
+  console.log("end",text);
   template[0]=text;
 }
 function TemplateParameterReplace(template){
-  console.log(template);
   TemplatePatialTags(template);
-  console.log(template);
   var arrObj = [template[3]];
   var text = template[0];
   var lower = text.toLowerCase();
@@ -862,15 +909,20 @@ function TemplateParameterReplace(template){
   }
   var idx = 0;
   var ParamArr = [];
+  /*
   var nowikiOpen = lower.indexOf("<nowiki");
   var preOpen = lower.indexOf("<pre");
-  nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
-  preClose = lower.indexOf("</pre",preOpen);
+  var mathOpen = lower.indexOf("<math");
+  var nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
+  var preClose = lower.indexOf("</pre",preOpen);
+  var mathClose = lower.indexOf("</math",mathOpen);
+  */
   while((idx = text.indexOf("{{{", idx)) != -1){
-    if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)){
+  /*  if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)||(idx>mathOpen&&idx<mathClose)){
       idx +=3;
       continue;
     }
+    */
     var open = idx+3;
     if((idx = text.indexOf("}}}", idx)) != -1){
       var close = idx;
@@ -878,10 +930,13 @@ function TemplateParameterReplace(template){
       var paramName = param[0];
       if(isNull(param[1])) param[1]="";
       ParamArr.push([paramName,open-3,close,param[1]]);
+      /*
       nowikiOpen = lower.indexOf("<nowiki",close);
       preOpen = lower.indexOf("<pre",close);
+      mathOpen = lower.indexOf("<math",close);
       nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
       preClose = lower.indexOf("</pre",preOpen);
+      mathClose = lower.indexOf("</math",mathOpen);*/
     }else{
       break;
     }
@@ -904,8 +959,9 @@ function TemplateParameterReplace(template){
 }
 module.exports.TemplateReplace = TemplateReplace;
 function DoParse(wikiparser){
-  wikiparser.AddHooker(new NowikiHooker());
-  wikiparser.AddHooker(new PreTagHooker());
+  //wikiparser.AddHooker(new NowikiHooker());
+  //wikiparser.AddHooker(new PreTagHooker());
+  //wikiparser.AddHooker(new MathHooker());
   wikiparser.AddHooker(new TableHooker());
   wikiparser.AddHooker(new BoldTagHooker());
   wikiparser.AddHooker(new ItalicHooker());
@@ -923,7 +979,7 @@ function DoParse(wikiparser){
   Renderer.Render(wikiparser, a, function (res) {
     rendered = res;
   });
-  var res = AfterRender(rendered);
+  var res = AfterRender(rendered,wikiparser);
   return res;
 }
 module.exports.DoParse = DoParse;
