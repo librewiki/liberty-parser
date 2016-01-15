@@ -169,4 +169,42 @@ class HeadingNode:
         heading_node_lv = min(start_lv,end_lv)
         self.headinglevel = heading_node_lv
         self.children[0].text = start_node_text[start_lv:]
-        self.children[-1].text = end_node_text[:(end_lv + 1) * -1]
+        self.children[-1].text = end_node_text[:end_lv * -1]
+        for it in self.children:
+            it.process(rootnode)
+class BoldNode:
+    def __init__(self):
+        self.children = []
+    def process(self, rootnode):
+        start_node_text = Node.GetNodeText(self.children[0])
+        end_node_text = Node.GetNodeText(self.children[-1])
+        self.children[0].text = start_node_text[3:]
+        self.children[-1].text = end_node_text[:-3]
+        for it in self.children:
+            it.process(rootnode)
+        pass
+    pass
+class ItalicNode:
+    def __init__(self):
+        self.children = []
+    def process(self, rootnode):
+        start_node_text = Node.GetNodeText(self.children[0])
+        end_node_text = Node.GetNodeText(self.children[-1])
+        self.children[0].text = start_node_text[2:]
+        self.children[-1].text = end_node_text[:-2]
+        for it in self.children:
+            it.process(rootnode)
+        pass
+    pass
+class BoldItalicNode:
+    def __init__(self):
+        self.children = []
+    def process(self, rootnode):
+        start_node_text = Node.GetNodeText(self.children[0])
+        end_node_text = Node.GetNodeText(self.children[-1])
+        self.children[0].text = start_node_text[5:]
+        self.children[-1].text = end_node_text[:-5]
+        for it in self.children:
+            it.process(rootnode)
+        pass
+    pass
