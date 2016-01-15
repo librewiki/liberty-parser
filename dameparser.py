@@ -63,6 +63,7 @@ class ExtLinkNode:
 class RefNode:
     def __init__(self):
         self.children = []
+        self.group = ""
     def process(self,rootnode):        
         options = Node.ParseAttribute(self.children[0])
         t =Node.GetNodeText(self.children[0])
@@ -75,32 +76,59 @@ class RefNode:
             t = t[:t.find("<")]
         self.children[-1].text = t
         
-        rootnode.__refnum__ = rootnode.__refnum__ + 1
-        num = rootnode.__refnum__
+        for it in self.children:
+            it.process(rootnode)
         
+
+        if ("__ref__" in rootnode.__dict__) == False:
+            rootnode.__ref__ = list()
         name = ""
+        isfinish = False
+        self.name = name
+        if "group" in options:
+            self.group = options["options"]
         if "name" in options:
             name = options["name"]
-            if ("__refname__" in rootnode.__dict__) == False:
-                rootnode.__refname__ = dict()
-            if (name in rootnode.__refname__) == False:
-                rootnode.__refname__[name] = num
-            else:
-                num = rootnode.__refname__[name]
-                rootnode.__refnum__ = rootnode.__refnum__ - 1
-        if ("__ref__" in rootnode.__dict__) == False:
-            rootnode.__ref__ = dict()
-        if (num in rootnode.__ref__) == False:
-            rootnode.__ref__[num] = dict()
-            rootnode.__ref__[num]["contents"] = self.children
-            rootnode.__ref__[num]["refs"] = list()
-        rootnode.__ref__[num]["refs"].append(self)
-        self.num = num
+            for ref in rootnode.__ref__:
+                if ref["name"] == self.name:
+                    ref["nodes"].append(self)
+                    isfinish = True
+                    pass
+            if isfinish:
+                item = dict()
+                item["contents"] = self.children
+                item["name"] = name
+                item["nodes"] = list()
+                item["nodes"].append(self)
+                rootnode.__ref__.append(self)
+        else:
+            item = dict()
+            item["contents"] = self.children
+            item["name"] = name
+            item["nodes"] = list()
+            item["nodes"].append(self)
+            rootnode.__ref__.append(self)
         pass
     pass
 class ReferenceNode:
     def __init__(self):
-        self.children = []
+        self.children = {}
     def process(self,rootnode):
+            text = Node.GetNodeText(self)
+            options = Node.ParseAttribute(text)
+            refchildren = []
+            others = {}
+            if "group" in options:
+                #TODO:그룹처리
+                group = options["group"]
+                if ("__ref__" in rootnode.__dict__) == False:
+                    rootnode.__ref__ = dict()
+                for it in rootnode.__ref__ :
+                    iter = rootnode.__ref__[it]
+                    if iter["refs"][0].group == group:
+                        refchildren[it] =iter
+                    else:
+                        others[it] = iter
+                
         pass
     pass
