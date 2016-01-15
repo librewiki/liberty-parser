@@ -64,8 +64,12 @@ Render.link = function (wikiparser, node) {
     //  /(파일|File).* /i
   };
   var intwikiRgx = new RegExp(wikiparser.InterwikiKey()+':.*',"i");
-  if(i18n.file.test(node.children[0].text)){
-    return Render.link.FileRender(wikiparser, node);
+  if(node.children[0].text[2]!==":"){
+    if(i18n.file.test(node.children[0].text)){
+      return Render.link.FileRender(wikiparser, node);
+    }
+  }else {
+    node.children[0].text = node.children[0].text.replace(":","");
   }
   var inter = node.children[0].text.match(intwikiRgx);
   if(!isNull(inter)){
@@ -380,34 +384,124 @@ Render.italic = function (wikiparser, node) {
 };
 Render.table = function (wikiparser, node) {
   var res = [];
-  res.push("<table ");
-  res.push(node.tableattr);
-  res.push(">");
-  for(var i in node.cells){
-    var row = node.cells[i];
-    res.push("<tr>");
-    for(var j in row){
-      var cell = row[j];
-
-      res.push("<");
-      if(cell.isHead){
-        res.push("th ");
-      }
-      else{
-        res.push("td ");
-      }
-      res.push(cell.attr);
-      res.push(">");
-      for(var k in cell.children)
-      {
-        var iter = cell.children[k];
-        res.push(Render[iter.render](wikiparser, iter));
-      }
-      res.push("</td>");
+  var lines = [];
+  var stbuilder = [];
+  var i, line;
+  var reg = /((class|style|align|colspan|rowspan)+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/gi;
+  node.children[node.children.length-1].text+="\n";
+  for(i in node.children){
+    //라인별로 분리한다.
+    var iter = node.children[i];
+    if(iter.type != "TEXT"){
+      stbuilder.push(Render[iter.render](wikiparser, iter));
     }
-    res.push("</tr>");
+    else{
+      var text = Render[iter.render](wikiparser, iter);
+      var tleng = text.length;
+      for(var j = 0;j<tleng;++j){
+        if(text[j]=="\n"){
+          line = stbuilder.join("").trim();
+          if ((!line.startsWith("|"))&&(!line.startsWith("!"))) {
+            if(lines.length===0) lines.push(line);
+            else lines[lines.length-1] += line;
+          }else {
+            var idx2=-1;
+            while((idx2 = line.search(/\|\||!!/))!==-1){
+              lines.push(line.substring(0,idx2));
+              line = line[idx2] + " " + line.substring(idx2+2).trim();
+            }
+            lines.push(line);
+          }
+          stbuilder = [];
+        }
+        else{
+          stbuilder.push(text[j]);
+        }
+      }
+    }
   }
-  res.push("</table>");
+  res.push("<table");
+  var tableattr = lines[0].match(reg);
+  if(!isNull(tableattr)){
+    res.push(" ");
+    res.push(tableattr.join(" "));
+  }
+  res.push(">");
+  i=1;
+  if(lines[1][1]=="+"){
+    res.push("\n<caption>");
+    res.push(lines[1].substr(2).trim());
+    res.push("</caption>\n");
+    i=2;
+  }
+  res.push("<tbody>\n");
+  console.log(lines);
+  var content;
+  var open = true;
+out:
+  for (;i<lines.length-1;++i) {
+    line = lines[i];
+    switch (line[0]+line[1]) {
+      case "|-":
+        if(lines[i+1][1]=="-") continue;
+        else if(lines[i+1][1]=="}"){
+          res.push("</tr>");
+          break out;
+        }
+        else{
+          if(open){
+            res.push("<tr");
+            open = false;
+          }else{
+            res.push("</tr>\n<tr");
+          }
+          var rowattr = line.match(reg);
+          if(!isNull(rowattr)){
+            res.push(" ");
+            res.push(rowattr.join(" "));
+          }
+          res.push(">");
+        }
+        break;
+      case "| ":
+        content = line.substr(2).split("|");
+        if(!isNull(content[1])){
+          var cellattr = content[0].match(reg);
+          if(!isNull(cellattr)){
+            res.push("<td ");
+            res.push(cellattr.join(" "));
+            res.push(">");
+          }else res.push("<td>");
+          res.push(content[1].trim());
+          res.push("</td>\n");
+        }else{
+          res.push("<td>");
+          res.push(content[0].trim());
+          res.push("</td>\n");
+        }
+        break;
+      case "! ":
+        content = line.substr(2).split("|");
+        if(!isNull(content[1])){
+          var thattr = content[0].match(reg);
+          if(!isNull(thattr)){
+            res.push("<th ");
+            res.push(thattr.join(" "));
+            res.push(">");
+          }else res.push("<th>");
+          res.push(content[1].trim());
+          res.push("</th>\n");
+        }else{
+          res.push("<th>");
+          res.push(content[0].trim());
+          res.push("</th>\n");
+        }
+        break;
+      default:
+      res.push("</tr>");
+    }
+  }
+  res.push("</tbody></table>");
   return res.join("");
 };
 Render.list = function (wikiparser, node) {

@@ -133,6 +133,12 @@ function TableNode(){
   this.tableattr = "";
 }
 TableNode.prototype.Process = function(){
+  for(var i in this.children){
+    var it = this.children[i];
+    it.Process();
+  }
+
+  /*
   var res = [[]];
   var row = 0;
   var children = [];
@@ -147,8 +153,8 @@ TableNode.prototype.Process = function(){
       temp = temp.substring(2,temp.length);
       i = temp.indexOf("\n");
       if(i != -1){
-          this.tableattr = temp.substring(0,i);
-          this.children[0].text = temp.substring(i,temp.length);
+        this.tableattr = temp.substring(0,i);
+        this.children[0].text = temp.substring(i,temp.length);
       }
     }
     if(this.children[this.children.length - 1].type == "TEXT"){
@@ -160,7 +166,7 @@ TableNode.prototype.Process = function(){
   for(i in this.children){
     var iter = this.children[i];
     iter.Process();
-
+    iter.text = iter.text.replace(/\|\|/gi,"\n| ");
     if(iter.type == "TEXT"){
       posPreBar = -1;
       temp = iter.text;
@@ -237,6 +243,7 @@ TableNode.prototype.Process = function(){
     }
   }
   this.children = children;
+  */
 };
 function ListNode(){
   this.children = [];
@@ -524,6 +531,8 @@ WikiParser.prototype.Parse = function(text){
       stack[stack.length - 1].children.push(new iter.hooker.NODE());
       break;
     }
+  //  console.log(text[iter.position-5]+text[iter.position-4]+text[iter.position-3]+text[iter.position-2]+text[iter.position-1]+text[iter.position]+
+  //    text[iter.position+1]+text[iter.position+2]+text[iter.position+3]+text[iter.position+4]+text[iter.position+5]);
     lastIdx = iter.position;
   }
   if(lastIdx <= text.length -1)
@@ -784,12 +793,12 @@ function AfterRender(rendered,wikiparser){
   for(var i in rules){
     rendered = rendered.replace(rules[i][0], rules[i][1]);
   }
-  var reg = /<_(nowiki|pre|math)>(\d)_(\d+)(?:<\/_(?:\1)[^>]*>)/gi;
+  var reg = /<_(nowiki|pre|math|code)>(\d)_(\d+)(?:<\/_(?:\1)[^>]*>)/gi;
   var cnt=0;
   rendered = rendered.replace(reg,function($0,$1,$2,$3){
-    console.log("sdf",$0,$1,$2,$3);
     var nowikitext = wikiparser.nowikiMatch[$2][$3];
-    nowikitext = nowikitext.replace(/<(?!((\/?)(nowiki|pre|math)))/gi,"&lt;").replace(/([^(nowiki|pre|math)])>/gi,"$1&gt;");
+    console.log("sdf",$0,$1,$2,$3,nowikitext);
+    nowikitext = nowikitext.replace(/<(?!((\/?)(nowiki|pre|math|code)))/gi,"&lt;").replace(/([^(nowiki|pre|math|code)])>/gi,"$1&gt;");
     if($1=="math"){
       nowikitext = nowikitext.replace("<math>","[math]").replace("</math>","[/math]");
     }
@@ -823,8 +832,8 @@ function NowikiProcess(wikiparser){
   var text = wikiparser.wikitext;
   var re = '<_$1>'+wikiparser.Templatedepth+'</_$1>';
   var cnt = 0;
-  var Match = text.match(/(?:<(nowiki|pre|math)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)(.*?)(?:<\/(?:\1)[^>]*>)/gi);
-  text = text.replace(/(?:<(nowiki|pre|math)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)(.*?)(?:<\/(?:\1)[^>]*>)/gi,function ($0,$1,$2) {
+  var Match = text.match(/(?:<(nowiki|pre|math|code)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)((?:.|\n)*?)(?:<\/(?:\1)[^>]*>)/gi);
+  text = text.replace(/(?:<(nowiki|pre|math|code)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)((?:.|\n)*?)(?:<\/(?:\1)[^>]*>)/gi,function ($0,$1,$2) {
     var res = '<_'+$1+'>'+wikiparser.Templatedepth+'_'+cnt+'</_'+$1+'>';
     cnt++;
     return res;
@@ -836,12 +845,6 @@ function TemplateCheck(wikiparser){
   wikiparser.templateList = [];
   var idx = 0;
   var lower = wikiparser.wikitext.toLowerCase();
-  /*var nowikiOpen = lower.indexOf("<nowiki");
-  var preOpen = lower.indexOf("<pre");
-  var mathOpen = lower.indexOf("<math");
-  var nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
-  var preClose = lower.indexOf("</pre",preOpen);
-  var mathClose = lower.indexOf("</math",mathOpen);*/
   while((idx = lower.indexOf("{{", idx)) != -1){
     if(lower.charAt(idx+2)=="{"){
       idx +=2;
@@ -854,18 +857,11 @@ function TemplateCheck(wikiparser){
       var templateArr = templateText.split("|");
       templateArr.splice(0,0,'',open-2,close);
       wikiparser.templateList.push(templateArr);
-      /*nowikiOpen = lower.indexOf("<nowiki",close);
-      mathOpen = lower.indexOf("<math",close);
-      preOpen = lower.indexOf("<pre",close);
-      nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
-      preClose = lower.indexOf("</pre",preOpen);
-      mathClose = lower.indexOf("</math",mathOpen);*/
     }else{
       break;
     }
     idx += 2;
   }
-  //console.log(wikiparser.templateList);
   return wikiparser;
 }
 module.exports.TemplateCheck = TemplateCheck;
