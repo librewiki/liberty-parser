@@ -208,3 +208,80 @@ class BoldItalicNode:
             it.process(rootnode)
         pass
     pass
+class CellNode:
+    def __init__(self,ishead = False):
+        self.ishead = ishead
+        self.attribute = ""
+        self.children = []
+    def process(self,rootnode):
+        for iter in self.children:
+            iter.process(rootnode)
+        pass
+
+class RowNode:
+    def __init__(self):
+        self.children = []
+        self.rows = []
+        self.attribute = ""
+    def process(self,rootnode):
+        for iter in self.children:
+            iter.process(rootnode)
+        pass
+class TableNode:
+    def __init__(self):
+        self.children = []
+    def process(self,rootnode):
+        posprebar = -1
+        j = -1
+        isstartcell = 0
+        rownode = None
+        cellnode = None
+        t = Node.GetNodeText(self.children[0])
+        t = t[2:]
+        cridx = t.find("\n")
+        if cridx is not -1:
+            self.tableattr = t[0:cridx]
+            self.children[0].text = t
+        t = Node.GetNodeText(self.children[-1])
+        t = t[:-2]
+        self.children[-1].text = t
+        for node in self.children:
+            if type(node) is TextNode:
+                posprebar = 0
+                i = 0
+                t = node.text
+                while i < len(t):
+                    if t[i:i+2] == "|-":
+                        isstartcell = 0
+                        if row is not None:
+                            self.rows.append(row)
+                        row = RowNode()
+                        i = i + 2
+                        cridx = t.find("\n",i)
+                        
+                        if cridx != -1:
+                            row.attribute = t[i:cridx]
+                            i = cridx
+                    else:
+                        ch = t[i]
+                        if ch is "!" or ch is "|":
+                            if row is None:
+                                row = RowNode()
+                        if ch is "!":
+                            if isstartcell is 0:
+                                if t[i+1] is "!":
+                                    isstartcell = 2
+                                    i = i + 1
+                                else:
+                                    isstartcell = 1
+                                posprebar = i
+                                cellnode = CellNode(True)
+                                row.children.append(cellnode)
+                            elif isstartcell is 1:
+                                if t[i - 1] == "!":
+                                    isstartcell = 2
+                                    posprebar = i
+                            elif isstartcell is 2:
+                                posprebar = posprebar + 1
+                                
+                        
