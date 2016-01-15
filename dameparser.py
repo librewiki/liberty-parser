@@ -1,7 +1,18 @@
 import StringIO
 class Node:
+    @staticmethod
+    def __getnodetext__(node):
+        if type(node) is TextNode:
+            return node.text
+        else:
+            buffer = StringIO.StringIO()
+            for n in node.children:
+                buffer.write(Node.__getnodetext__(n))
+            return buffer.getvalue()
+    @staticmethod
     def GetNodeText(node):
-        return ""
+        return Node.__getnodetext__(node)
+    @staticmethod
     def ParseAttribute(node):
         return {}
 class NowikiNode:
@@ -24,6 +35,8 @@ class TextNode:
 class BRNode:
     def __init__(self):
         self.children = []
+    def process(self,rootnode):
+        pass
 class LinkNode:
     def __init__(self):
         self.linktype = "LINK"
@@ -112,7 +125,7 @@ class RefNode:
     pass
 class ReferenceNode:
     def __init__(self):
-        self.children = {}
+        self.children = []
     def process(self,rootnode):
             text = Node.GetNodeText(self)
             options = Node.ParseAttribute(text)
@@ -121,14 +134,39 @@ class ReferenceNode:
             if "group" in options:
                 #TODO:그룹처리
                 group = options["group"]
-                if ("__ref__" in rootnode.__dict__) == False:
-                    rootnode.__ref__ = dict()
-                for it in rootnode.__ref__ :
-                    iter = rootnode.__ref__[it]
-                    if iter["refs"][0].group == group:
-                        refchildren[it] =iter
-                    else:
-                        others[it] = iter
-                
+            else:
+                group = ""
+            if ("__ref__" in rootnode.__dict__) == False:
+                rootnode.__ref__ = dict()
+            for it in rootnode.__ref__ :
+                iter = rootnode.__ref__[it]
+                if iter["refs"][0].group == group:
+                    refchildren[it] =iter
+                else:
+                    others[it] = iter
+            rootnode.__ref__ = others
+        
         pass
     pass
+class HeadingNode:
+    def __init__(self):
+        self.children = []
+    def process(self,rootnode):
+        start_node_text = Node.GetNodeText(self.children[0])
+        end_node_text = Node.GetNodeText(self.children[-1])
+        start_lv = 0
+        for ch in start_node_text:
+            if ch == "=":
+                start_lv = start_lv + 1
+            else:
+                break
+        end_lv = 0
+        for ch in end_node_text:
+            if ch == "=":
+                end_lv = end_lv + 1
+            else:
+                break
+        heading_node_lv = min(start_lv,end_lv)
+        self.headinglevel = heading_node_lv
+        self.children[0].text = start_node_text[start_lv:]
+        self.children[-1].text = end_node_text[:(end_lv + 1) * -1]
