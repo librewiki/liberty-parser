@@ -387,6 +387,7 @@ Render.table = function (wikiparser, node) {
   var lines = [];
   var stbuilder = [];
   var i, line;
+  console.log(node);
   var reg = /((class|style|align|colspan|rowspan)+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/gi;
   node.children[node.children.length-1].text+="\n";
   for(i in node.children){
@@ -420,6 +421,9 @@ Render.table = function (wikiparser, node) {
       }
     }
   }
+  if (lines[lines.length-1]!=="|}") {
+    return "<h5>error</h5>";
+  }
   res.push("<table");
   var tableattr = lines[0].match(reg);
   if(!isNull(tableattr)){
@@ -445,7 +449,6 @@ out:
       case "|-":
         if(lines[i+1][1]=="-") continue;
         else if(lines[i+1][1]=="}"){
-          res.push("</tr>");
           break out;
         }
         else{
@@ -498,10 +501,13 @@ out:
         }
         break;
       default:
-      res.push("</tr>");
+      if (line[1]!==' ') {
+        lines[i]=lines[i][0]+" "+lines[i].substr(1);
+        i--;
+      }
     }
   }
-  res.push("</tbody></table>");
+  res.push("</tr></tbody></table>");
   return res.join("");
 };
 Render.list = function (wikiparser, node) {

@@ -137,113 +137,6 @@ TableNode.prototype.Process = function(){
     var it = this.children[i];
     it.Process();
   }
-
-  /*
-  var res = [[]];
-  var row = 0;
-  var children = [];
-  var isStartCell = 0;
-  var posPreBar = -1;
-  var j = -1;
-  var i;
-  var temp;
-  if(!isNull(this.children[0])){
-    if(this.children[0].type == "TEXT"){
-      temp = this.children[0].text;
-      temp = temp.substring(2,temp.length);
-      i = temp.indexOf("\n");
-      if(i != -1){
-        this.tableattr = temp.substring(0,i);
-        this.children[0].text = temp.substring(i,temp.length);
-      }
-    }
-    if(this.children[this.children.length - 1].type == "TEXT"){
-      temp = this.children[this.children.length - 1].text;
-      this.children[this.children.length - 1].text = temp.substring(0,temp.length - 2);
-    }
-  }
-  var item = null;
-  for(i in this.children){
-    var iter = this.children[i];
-    iter.Process();
-    iter.text = iter.text.replace(/\|\|/gi,"\n| ");
-    if(iter.type == "TEXT"){
-      posPreBar = -1;
-      temp = iter.text;
-//테이블의 셀을 구한다.
-//셀 파싱 규칙은 '|속성|셀 내용\n'이 기본이며, '|셀 내용\n'이나 '||셀 내용'은 변칙일 뿐이다
-      var t;
-      var newTextNode;
-      for(j = 0 ; j < temp.length ; j++){
-        if(temp.substr(j,2) == "|-"){
-          res.push([]);
-          row++;
-          isStartCell = 0;
-          posPreBar = -1;
-        }
-        else if(temp[j] == "|"){
-          switch(isStartCell){
-            case 0:{
-              posPreBar = j;
-              isStartCell = 1;
-              item = {attr:"",children:[],isHead:false};
-            }
-            break;
-            case 1:{
-              isStartCell = 2;
-              t = temp.substring(posPreBar+1,j);
-              item.attr = t;
-              posPreBar = j;
-            }
-            break;
-            case 2:{
-              t = temp.substring(posPreBar+1,j);
-              newTextNode = new TextNode(t);
-              item.children.push(newTextNode);
-              res[row].push(item);
-              children.push(newTextNode);
-              item = {attr:"",children:[],isHead:false};
-              isStartCell = 1;
-              posPreBar = j;
-            }
-            break;
-          }
-        }
-        else if(temp[j] == "!" && isStartCell === 0){
-          isStartCell = 1;
-          item = {attr:"",children:[],isHead:true};
-          posPreBar = j;
-        }
-        else if(temp[j] == '\n' && isStartCell !== 0){
-          t = temp.substring(posPreBar+1,j);
-          newTextNode = new TextNode(t);
-          item.children.push(newTextNode);
-          res[row].push(item);
-          children.push(newTextNode);
-
-          isStartCell = 0;
-          posPreBar = j;
-        }
-      }
-      if(isStartCell !== 0){
-        t = temp.substring(posPreBar+1,temp.length);
-        newTextNode = new TextNode(t);
-        item.children.push(newTextNode);
-        children.push(newTextNode);
-      }
-    }
-    else{
-      item.children.push(iter);
-      children.push(iter);
-    }
-  }
-  for(i in res){
-    if(res[i].length !== 0){
-      this.cells.push(res[i]);
-    }
-  }
-  this.children = children;
-  */
 };
 function ListNode(){
   this.children = [];
@@ -570,6 +463,7 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   while((idx = text.indexOf("{|", idx)) != -1){
     wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
+    console.log("afsdfsdvzx");
     idx += 2;
   }
   idx = 0;
@@ -830,38 +724,83 @@ function ParserInit(text,namespace,title){
 module.exports.ParserInit = ParserInit;
 function NowikiProcess(wikiparser){
   var text = wikiparser.wikitext;
-  var re = '<_$1>'+wikiparser.Templatedepth+'</_$1>';
-  var cnt = 0;
-  var Match = text.match(/(?:<(nowiki|pre|math|code)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)((?:.|\n)*?)(?:<\/(?:\1)[^>]*>)/gi);
-  text = text.replace(/(?:<(nowiki|pre|math|code)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)((?:.|\n)*?)(?:<\/(?:\1)[^>]*>)/gi,function ($0,$1,$2) {
+  var idx = 0, depth = 0, cnt = 0, start=0, end=-1, sb=[], Match=[];
+  while(true){
+    var t = text.substr(idx).search(/<\/?(nowiki|pre|math|code)(.*?)>/);
+    if(t===-1){
+      sb.push(text.substring(end+1));
+      break;
+    }
+    idx+=t;
+    var oc = text.charAt(idx+1);
+    if(oc!=="/"){
+      depth++;
+      if(depth===1){
+        start = idx;
+        sb.push(text.substring(end+1,start-1));
+      }
+    }
+    else{
+      depth--;
+      if(depth===0){
+        end = text.indexOf(">",idx);
+        var nowikitext = text.substring(start,end+1);
+        sb.push(nowikitext.replace(/(?:<(nowiki|pre|math|code)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)((?:.|\n)*?)(?:<\/(?:\1)[^>]*>)/i,f));
+        Match.push(nowikitext);
+      }
+    }
+    idx+=2;
+  }
+  wikiparser.wikitext = sb.join("");
+  wikiparser.nowikiMatch.push(Match);
+  function f($0,$1,$2) {
+    nowikitext = '<'+$1+'>'+$2.replace("<","&lt;").replace(">","&gt;")+'</'+$1+'>';
     var res = '<_'+$1+'>'+wikiparser.Templatedepth+'_'+cnt+'</_'+$1+'>';
     cnt++;
     return res;
-  });
-  wikiparser.wikitext = text;
-  wikiparser.nowikiMatch.push(Match);
+  }
+  if(depth>0){
+    wikiparser.wikitext += "<h5>parsing error in nowiki tags</h5>";
+  }
 }
 function TemplateCheck(wikiparser){
   wikiparser.templateList = [];
-  var idx = 0;
-  var lower = wikiparser.wikitext.toLowerCase();
-  while((idx = lower.indexOf("{{", idx)) != -1){
-    if(lower.charAt(idx+2)=="{"){
-      idx +=2;
-      continue;
-    }
-    var open = idx+2;
-    if((idx = lower.indexOf("}}", idx)) != -1){
-      var close = idx;
-      var templateText = wikiparser.wikitext.substring(open,close);
-      var templateArr = templateText.split("|");
-      templateArr.splice(0,0,'',open-2,close);
-      wikiparser.templateList.push(templateArr);
-    }else{
+  var idx = 0, depth = 0, start, end;
+  var text = wikiparser.wikitext;
+  while(true){
+    var t = text.substr(idx).search(/{{|}}/);
+    if(t===-1){
       break;
     }
-    idx += 2;
+    idx+=t;
+    var oc = text.charAt(idx);
+    if(oc=="{"){
+      if(text.charAt(idx+2)=="{"&&text.charAt(idx+3)!=="{"){
+        idx+=2;
+        continue;
+      }
+      depth++;
+      if(depth===1){
+          start = idx;
+      }
+    }
+    else{
+      if(text.charAt(idx+2)=="}"&&text.charAt(idx+3)!=="}"){
+        idx+=2;
+        continue;
+      }
+      depth--;
+      if(depth===0){
+        end = idx;
+        var templateText = wikiparser.wikitext.substring(start+2,end);
+        var templateArr = templateText.split("|");
+        templateArr.splice(0,0,'',start,end);
+        wikiparser.templateList.push(templateArr);
+      }
+    }
+    idx+=2;
   }
+  console.log(wikiparser.templateList);
   return wikiparser;
 }
 module.exports.TemplateCheck = TemplateCheck;
@@ -905,20 +844,7 @@ function TemplateParameterReplace(template){
   }
   var idx = 0;
   var ParamArr = [];
-  /*
-  var nowikiOpen = lower.indexOf("<nowiki");
-  var preOpen = lower.indexOf("<pre");
-  var mathOpen = lower.indexOf("<math");
-  var nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
-  var preClose = lower.indexOf("</pre",preOpen);
-  var mathClose = lower.indexOf("</math",mathOpen);
-  */
   while((idx = text.indexOf("{{{", idx)) != -1){
-  /*  if((idx>nowikiOpen&&idx<nowikiClose)||(idx>preOpen&&idx<preClose)||(idx>mathOpen&&idx<mathClose)){
-      idx +=3;
-      continue;
-    }
-    */
     var open = idx+3;
     if((idx = text.indexOf("}}}", idx)) != -1){
       var close = idx;
@@ -926,13 +852,6 @@ function TemplateParameterReplace(template){
       var paramName = param[0];
       if(isNull(param[1])) param[1]="";
       ParamArr.push([paramName,open-3,close,param[1]]);
-      /*
-      nowikiOpen = lower.indexOf("<nowiki",close);
-      preOpen = lower.indexOf("<pre",close);
-      mathOpen = lower.indexOf("<math",close);
-      nowikiClose = lower.indexOf("</nowiki",nowikiOpen);
-      preClose = lower.indexOf("</pre",preOpen);
-      mathClose = lower.indexOf("</math",mathOpen);*/
     }else{
       break;
     }
@@ -955,9 +874,6 @@ function TemplateParameterReplace(template){
 }
 module.exports.TemplateReplace = TemplateReplace;
 function DoParse(wikiparser){
-  //wikiparser.AddHooker(new NowikiHooker());
-  //wikiparser.AddHooker(new PreTagHooker());
-  //wikiparser.AddHooker(new MathHooker());
   wikiparser.AddHooker(new TableHooker());
   wikiparser.AddHooker(new BoldTagHooker());
   wikiparser.AddHooker(new ItalicHooker());
