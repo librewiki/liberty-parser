@@ -1,6 +1,5 @@
 "USE STRICT";
 /*
-*EDITING BY DAMEZUMA, NESSUN
 *author DAMEZUMA, NESSUN
 *published under the MIT license
 */

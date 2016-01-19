@@ -33,14 +33,14 @@ Render.text = function (wikiparser, node) {
     var renderedLine = [];
     for (var i=0;i<texts.length;i++){
       if(texts[i].search(/((http|https|ftp|sftp|gopher|telnet|news|mailto|ed2k):\/\/|magnet:).*/i)!==-1){
-        renderedLine.push('<a style="color:#008000;" href="');
+        renderedLine.push('<a class="external" href="');
         renderedLine.push(texts[i]);
         renderedLine.push('">');
         renderedLine.push(texts[i]);
         renderedLine.push('</a>');
       }else if((texts[i]=="ISBN")&&i<texts.length-1){
         if(isbn.test(texts[i+1])){
-          renderedLine.push('<a style="color:#6699FF;" href="//librewiki.net/wiki/특수:책찾기/');
+          renderedLine.push('<a href="//librewiki.net/wiki/특수:책찾기/');
           renderedLine.push(texts[i+1]);
           renderedLine.push('">ISBN ');
           renderedLine.push(texts[i+1]);
@@ -56,7 +56,8 @@ Render.text = function (wikiparser, node) {
 Render.link = function (wikiparser, node) {
   var res = [];
   var showText = '';
-  var srcFront = '//librewiki.net/wiki/';
+  //var srcFront = '//librewiki.net/wiki/';
+  var srcFront = '';
   var srcEnd = '';
   var isInterwiki = false;
   var i18n = {
@@ -78,8 +79,7 @@ Render.link = function (wikiparser, node) {
     srcFront = x[0];
     srcEnd = x[1];
   }
-  res.push('<a style="color:#6699FF;');
-  res.push('" class="');
+  res.push('<a class="');
   if(isInterwiki) res.push('interwiki ');
   res.push('" href="');
   res.push(srcFront);
@@ -178,7 +178,7 @@ Render.extlink = function (wikiparser, node) {
     showText = innerParsed.slice(1).join(" ");
   }
   if(linkText.search(/((http|https|ftp|sftp|gopher|telnet|news|mailto|ed2k):\/\/|magnet:).*/i)!==-1){
-    res.push('<a style="color:#008000;" href="');
+    res.push('<a class="external" href="');
     res.push(linkText);
     res.push('">');
     res.push(showText);
