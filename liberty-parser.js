@@ -204,12 +204,14 @@ function WikiParser(){
   this.headingQueCurr = 0;
   this.headingNumbering = [0,0,0,0,0,0];
   this.headingMin = 100;
-  this.referNaming = []; //[name, 번호, 횟수, 횟수2]을 저장
-  this.referNum = 0;
-  this.referRestart = 0;
-  this.referContent = [];
+  this.headingContents = [];
+  this.references = [];
+  this.lastReferencesIdx = 0;
+  this.lastReferencesAbs = 0;
+  this.maxRefAbs = 0;
   this.wikiDB = {};
   this.linkNum = 0;
+  this.headingCount = 0;
 }
 WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
@@ -462,7 +464,6 @@ TableHooker.prototype.DoMark = function(wikiparser, text){
   var idx = 0;
   while((idx = text.indexOf("{|", idx)) != -1){
     wikiparser.AddMark(new HookMarker(this, MARK_TYPE.OPEN_TAG,idx));
-    console.log("afsdfsdvzx");
     idx += 2;
   }
   idx = 0;
@@ -680,26 +681,7 @@ HRHooker.prototype.DoMark = function(wikiparser, text){
   }
 };
 
-function AfterRender(rendered,wikiparser){
-  //렌더링 이후에 다 못한 처리를 한다
-  var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
-  for(var i in rules){
-    rendered = rendered.replace(rules[i][0], rules[i][1]);
-  }
-  var reg = /<_(nowiki|pre|math|code)>(\d)_(\d+)(?:<\/_(?:\1)[^>]*>)/gi;
-  var cnt=0;
-  rendered = rendered.replace(reg,function($0,$1,$2,$3){
-    var nowikitext = wikiparser.nowikiMatch[$2][$3];
-    console.log("sdf",$0,$1,$2,$3,nowikitext);
-    nowikitext = nowikitext.replace(/<(?!((\/?)(nowiki|pre|math|code)))/gi,"&lt;").replace(/([^(nowiki|pre|math|code)])>/gi,"$1&gt;");
-    if($1=="math"){
-      nowikitext = nowikitext.replace("<math>","[math]").replace("</math>","[/math]");
-    }
-    return nowikitext;
-  });
-  var idx = 0;
-  return rendered;
-}
+
 function isNull(obj){
   return obj === null || obj === undefined;
 }
@@ -707,7 +689,7 @@ function ParserInit(text,namespace,title){
   var wikiparser = new WikiParser();
   wikiparser.namespace = namespace;
   wikiparser.title = title;
-  wikiparser.wikitext = text;
+  wikiparser.wikitext = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
   wikiparser.templateList = [];
   //지원하고자 하는 언어를 추가
   wikiparser.Addi18n("english");
@@ -717,50 +699,85 @@ function ParserInit(text,namespace,title){
   wikiparser.AddInterwiki("./interwiki.json");
   wikiparser.Templatedepth = 0;
   wikiparser.nowikiMatch = [];
+  wikiparser.showTocMin = 4;
   NowikiProcess(wikiparser);
   return wikiparser;
 }
 module.exports.ParserInit = ParserInit;
 function NowikiProcess(wikiparser){
   var text = wikiparser.wikitext;
-  var idx = 0, depth = 0, cnt = 0, start=0, end=-1, sb=[], Match=[];
-  while(true){
-    var t = text.substr(idx).search(/<\/?(nowiki|pre|math|code)(.*?)>/);
-    if(t===-1){
-      sb.push(text.substring(end+1));
-      break;
-    }
-    idx+=t;
-    var oc = text.charAt(idx+1);
-    if(oc!=="/"){
-      depth++;
-      if(depth===1){
-        start = idx;
-        sb.push(text.substring(end+1,start-1));
+  text = text.replace(/<(pre|nowiki|math)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>((?:.|\n)*?)<\/\1>/gi,function ($0,$1,$2) {
+    $2 = $2.replace(/</g,"&lt").replace(/>/g,"&gt");
+    var x = wikiparser.nowikiMatch.push('<'+$1+'>'+$2+'</'+$1+'>');
+    return "\\nowiki\\_"+(x-1)+"_\\nowiki\\";
+  });
+  wikiparser.wikitext = text;
+}
+function showToc(rendered,wikiparser){
+  var res = [];
+  var stack = [];
+  var __TOC__ = false;
+  var reg = /(<(?:h|H)(?:1|2|3|4|5))/;
+  if(rendered.indexOf('__TOC__')!=-1) __TOC__ = true;
+  if(__TOC__){
+    reg = /(__TOC__)/;
+  }
+  rendered = rendered.replace(reg,function ($0,$1) {
+    //need i18n
+    res.push('<div id="toc" class="toc"><div id="toctitle"><h2>목차</h2></div>\n');
+    for (var i = 0; i < wikiparser.headingContents.length; i++) {
+      console.log(stack);
+      var k;
+      if(i!==0){
+        k = wikiparser.headingContents[i-1][2]-wikiparser.headingContents[i][2];
       }
-    }
-    else{
-      depth--;
-      if(depth===0){
-        end = text.indexOf(">",idx);
-        var nowikitext = text.substring(start,end+1);
-        sb.push(nowikitext.replace(/(?:<(nowiki|pre|math|code)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>)((?:.|\n)*?)(?:<\/(?:\1)[^>]*>)/i,f));
-        Match.push(nowikitext);
+      if(i===0||k<0){
+        res.push('\n<ul>');
+        stack.push('</ul>\n');
+      }else if (k>0) {
+        res.push(stack.pop());
+        for (; k > 0; k--) {
+          res.push(stack.pop());
+          res.push(stack.pop());
+        }
+      }else {
+        res.push(stack.pop());
       }
+      res.push('<li class="toclevel-');
+      stack.push('</li>\n');
+      res.push(wikiparser.headingContents[i][2]);
+      res.push(' tocsection-');
+      res.push(i+1);
+      res.push('"><a href="#"><span class="tocnumber">');
+      res.push(wikiparser.headingContents[i][0]);
+      res.push('</span><span class="toctext">');
+      res.push(wikiparser.headingContents[i][1]);
+      res.push('</span></a>');
     }
-    idx+=2;
+    while(stack.length>0){
+      res.push(stack.pop());
+    }
+    res.push('</div>');
+    if(!__TOC__){
+      res.push($1);
+    }
+    return res.join("");
+  });
+  return rendered;
+}
+function AfterRender(rendered,wikiparser){
+  //렌더링 이후에 다 못한 처리를 한다
+  if(wikiparser.headingCount>=wikiparser.showTocMin){
+    rendered = showToc(rendered,wikiparser);
   }
-  wikiparser.wikitext = sb.join("");
-  wikiparser.nowikiMatch.push(Match);
-  function f($0,$1,$2) {
-    nowikitext = '<'+$1+'>'+$2.replace("<","&lt;").replace(">","&gt;")+'</'+$1+'>';
-    var res = '<_'+$1+'>'+wikiparser.Templatedepth+'_'+cnt+'</_'+$1+'>';
-    cnt++;
-    return res;
+  var rules = [[/<script/gi,'&lt;script'],[/<\/script/gi,'&lt;/script'],[/<style/gi,'&lt;style'],[/<\/style/gi,'&lt;/style']];
+  for(var i in rules){
+    rendered = rendered.replace(rules[i][0], rules[i][1]);
   }
-  if(depth>0){
-    wikiparser.wikitext += "<h5>parsing error in nowiki tags</h5>";
-  }
+  rendered = rendered.replace(/\\nowiki\\_(\d+)_\\nowiki\\/g,function ($0,$1) {
+    return wikiparser.nowikiMatch[$1];
+  });
+  return rendered;
 }
 function TemplateCheck(wikiparser){
   wikiparser.templateList = [];
@@ -799,7 +816,6 @@ function TemplateCheck(wikiparser){
     }
     idx+=2;
   }
-  console.log(wikiparser.templateList);
   return wikiparser;
 }
 module.exports.TemplateCheck = TemplateCheck;
@@ -814,17 +830,15 @@ function TemplateReplace(wikiparser){
     close = wikiparser.templateList[i][2]+2;
   }
   sb.push(wikiparser.wikitext.substring(close));
-  wikiparser.wikitext = sb.join("");
+  wikiparser.wikitext = sb.join("").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
   NowikiProcess(wikiparser);
   return wikiparser;
 }
 function TemplatePatialTags(template){
   var text = template[0];
-  console.log("start",text);
   text=text.replace(/<\/?includeonly>/gi,"");
   text=text.replace(/(?:.|\n)*<onlyinclude>(.*)<\/onlyinclude>(?:.|\n)*/gi,'$1');
   text=text.replace(/<noinclude>.*<\/noinclude>/gi,"");
-  console.log("end",text);
   template[0]=text;
 }
 function TemplateParameterReplace(template){
