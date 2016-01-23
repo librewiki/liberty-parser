@@ -366,7 +366,6 @@ Render.heading = function (wikiparser, node) {
     }
   }
   wikiparser.headingQueCurr++;
-  res.push("<h"+curLv+'><a href="#toc">');
   var res2 = [];
   for(var k in wikiparser.headingNumbering){
     if(wikiparser.headingNumbering[k]!==0){
@@ -374,17 +373,25 @@ Render.heading = function (wikiparser, node) {
       res2.push('.');
     }
   }
-  var temp2 = res2.join("");
-  res.push(temp2);
+  res2.pop();
+  var number = res2.join("");
+  res.push('<h');
+  res.push(curLv);
+  res.push('><span id="s-');
+  res.push(number);
+  res.push('" class="mw-headline"><a href="#toctitle">');
+  res.push(number);
   res.push("</a> ");
   var res3 = [];
   for(var i in node.children){
     var it = node.children[i];
     res3.push(Render[it.render](wikiparser, it));
   }
-  var temp3 = res3.join("").trim();
-  wikiparser.headingContents.push([temp2,temp3,curLv-min+1]);
-  res.push(temp3);
+  var content = res3.join("").trim();
+  wikiparser.headingContents.push([number,content,curLv-min+1]);
+  res.push(content);
+  res.push('</span>');
+  //editsection
   res.push("</h"+curLv+">");
   return res.join("");
 };

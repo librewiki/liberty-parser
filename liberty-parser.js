@@ -748,9 +748,11 @@ function showToc(rendered,wikiparser){
       res.push(wikiparser.headingContents[i][2]);
       res.push(' tocsection-');
       res.push(i+1);
-      res.push('"><a href="#"><span class="tocnumber">');
+      res.push('"><a href="#s-');
       res.push(wikiparser.headingContents[i][0]);
-      res.push('</span><span class="toctext">');
+      res.push('"><span class="tocnumber">');
+      res.push(wikiparser.headingContents[i][0]);
+      res.push(' </span><span class="toctext">');
       res.push(wikiparser.headingContents[i][1]);
       res.push('</span></a>');
     }
@@ -760,6 +762,8 @@ function showToc(rendered,wikiparser){
     res.push('</div>');
     if(!__TOC__){
       res.push($1);
+    }else {
+      res.push('<br />');
     }
     return res.join("");
   });
@@ -767,6 +771,20 @@ function showToc(rendered,wikiparser){
 }
 function AfterRender(rendered,wikiparser){
   //렌더링 이후에 다 못한 처리를 한다
+  var cnt = 0;
+  rendered=rendered.replace(/__NOTOC__/g,function () {
+    wikiparser.showTocMin = 1/0;
+    return "";
+  });
+  rendered=rendered.replace(/__TOC__/g,function () {
+    wikiparser.showTocMin = -1;
+    if(cnt>0) return "";
+    else return "__TOC__";
+  });
+  rendered=rendered.replace(/__FORCETOC__/g,function () {
+    wikiparser.showTocMin = -1;
+    return "";
+  });
   if(wikiparser.headingCount>=wikiparser.showTocMin){
     rendered = showToc(rendered,wikiparser);
   }
@@ -777,6 +795,7 @@ function AfterRender(rendered,wikiparser){
   rendered = rendered.replace(/\\nowiki\\_(\d+)_\\nowiki\\/g,function ($0,$1) {
     return wikiparser.nowikiMatch[$1];
   });
+  rendered = rendered.replace(/<math>/gi,"[math]").replace(/<\/math>/gi,"[/math]");
   return rendered;
 }
 function TemplateCheck(wikiparser){
