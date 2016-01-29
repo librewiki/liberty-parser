@@ -726,7 +726,6 @@ function showToc(rendered,wikiparser){
     //need i18n
     res.push('<div id="toc" class="toc"><div id="toctitle"><h2>목차</h2></div>\n');
     for (var i = 0; i < wikiparser.headingContents.length; i++) {
-      console.log(stack);
       var k;
       if(i!==0){
         k = wikiparser.headingContents[i-1][2]-wikiparser.headingContents[i][2];
