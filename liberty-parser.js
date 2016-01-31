@@ -192,27 +192,7 @@ HookMarker.prototype.IsGreaterThan = function(marker){
   }
   return res;
 };
-function WikiParser(){
-  this.wikitext = '';
-  this.i18ns = {};
-  this.local = "english";
-  this.interwikis = {};
-  this.hookers = [];
-  this.markList = [];
-  this.templateList = [];
-  this.headingQue = [];
-  this.headingQueCurr = 0;
-  this.headingNumbering = [0,0,0,0,0,0];
-  this.headingMin = 100;
-  this.headingContents = [];
-  this.references = [];
-  this.lastReferencesIdx = 0;
-  this.lastReferencesAbs = 0;
-  this.maxRefAbs = 0;
-  this.wikiDB = {};
-  this.linkNum = 0;
-  this.headingCount = 0;
-}
+var WikiParser = require('./coremodule/WikiParser');
 WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
 };
@@ -685,35 +665,9 @@ HRHooker.prototype.DoMark = function(wikiparser, text){
 function isNull(obj){
   return obj === null || obj === undefined;
 }
-function ParserInit(text,namespace,title){
-  var wikiparser = new WikiParser();
-  wikiparser.namespace = namespace;
-  wikiparser.title = title;
-  wikiparser.wikitext = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
-  wikiparser.templateList = [];
-  //지원하고자 하는 언어를 추가
-  wikiparser.Addi18n("english");
-  wikiparser.Addi18n("korean");
-  //서비스 언어를 설정
-  wikiparser.local = "korean";
-  wikiparser.AddInterwiki("./interwiki.json");
-  wikiparser.Templatedepth = 0;
-  wikiparser.nowikiMatch = [];
-  wikiparser.showTocMin = 4;
-  NowikiProcess(wikiparser);
-  return wikiparser;
-}
-module.exports.ParserInit = ParserInit;
-function NowikiProcess(wikiparser){
-  var text = wikiparser.wikitext;
-  text = text.replace(/<(pre|nowiki|math)(?:(?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(?:\/?)>((?:.|\n)*?)<\/\1>/gi,function ($0,$1,$2) {
-    $2 = $2.replace(/</g,"&lt").replace(/>/g,"&gt");
-    var x = wikiparser.nowikiMatch.push('<'+$1+'>'+$2+'</'+$1+'>');
-    return "\\nowiki\\_"+(x-1)+"_\\nowiki\\";
-  });
-  wikiparser.wikitext = text;
-}
-function showToc(rendered,wikiparser){
+
+var nowikiProcess = require('./coremodule/nowikiProcess.js');
+function showToc (rendered, wikiparser) {
   var res = [];
   var stack = [];
   var __TOC__ = false;
@@ -797,6 +751,8 @@ function AfterRender(rendered,wikiparser){
   rendered = rendered.replace(/<math>/gi,"[math]").replace(/<\/math>/gi,"[/math]");
   return rendered;
 }
+var parserFunction = require('./coremodule/parserFunction.js');
+
 function TemplateCheck(wikiparser){
   wikiparser.templateList = [];
   var idx = 0, depth = 0, start, end;
@@ -828,17 +784,18 @@ function TemplateCheck(wikiparser){
         end = idx;
         var templateText = wikiparser.wikitext.substring(start+2,end);
         var templateArr = templateText.split("|");
-        templateArr.splice(0,0,'',start,end);
+        templateArr[0] = templateArr[0].trim();
+        templateArr.splice(0,0,true,start,end);
         wikiparser.templateList.push(templateArr);
       }
     }
     idx+=2;
   }
-  return wikiparser;
+  return parserFunction(wikiparser);
 }
 module.exports.TemplateCheck = TemplateCheck;
 function TemplateReplace(wikiparser){
-  wikiparser.Templatedepth++;
+  wikiparser.templateDepth++;
   var sb = [];
   var open = 0, close = 0;
   for (var i = 0; i < wikiparser.templateList.length; i++) {
@@ -849,14 +806,17 @@ function TemplateReplace(wikiparser){
   }
   sb.push(wikiparser.wikitext.substring(close));
   wikiparser.wikitext = sb.join("").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
-  NowikiProcess(wikiparser);
+  nowikiProcess(wikiparser);
   return wikiparser;
 }
 function TemplatePatialTags(template){
   var text = template[0];
-  text=text.replace(/<\/?includeonly>/gi,"");
-  text=text.replace(/(?:.|\n)*<onlyinclude>(.*)<\/onlyinclude>(?:.|\n)*/gi,'$1');
-  text=text.replace(/<noinclude>.*<\/noinclude>/gi,"");
+  text=text.
+  replace(/\r\n/g,"\n").
+  replace(/\r/g,"\n").
+  replace(/<\/?includeonly>/gi,"").
+  replace(/(?:.|\n)*<onlyinclude>(.*)<\/onlyinclude>(?:.|\n)*/gi,'$1').
+  replace(/<noinclude>.*<\/noinclude>/gi,"");
   template[0]=text;
 }
 function TemplateParameterReplace(template){
@@ -881,7 +841,7 @@ function TemplateParameterReplace(template){
       var close = idx;
       var param = text.substring(open,close).split("|");
       var paramName = param[0];
-      if(isNull(param[1])) param[1]="";
+      if(isNull(param[1])) param[1]=text.substring(open-3,close+3);
       ParamArr.push([paramName,open-3,close,param[1]]);
     }else{
       break;
