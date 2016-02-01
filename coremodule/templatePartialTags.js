@@ -3,6 +3,6 @@ function noTemplatePartial (wikiparser) {
   wikiparser.wikitext.
   replace(/<\/?noinclude>/gi,"").
   replace(/<\/?onlyinclude>/gi,"").
-  replace(/<includeonly>.*<\/includeonly>/gi,"");
+  replace(/<includeonly>.*?<\/includeonly>/gi,"");
 }
 module.exports.noTemplatePartial = noTemplatePartial;

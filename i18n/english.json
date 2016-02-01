@@ -2,5 +2,6 @@
   "right" : "right",
   "left"  : "left",
   "thumb" : "thumb",
-  "file" : "file"
+  "file" : "file",
+  "redirect" : "redirect"
 }

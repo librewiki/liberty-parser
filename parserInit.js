@@ -2,7 +2,8 @@ var WikiParser = require('./coremodule/WikiParser');
 var nowikiProcess = require('./coremodule/nowikiProcess.js');
 var templatePartialTags = require('./coremodule/templatePartialTags.js');
 var noTemplatePartial = templatePartialTags.noTemplatePartial;
-function parserInit(text,namespace,title){
+var noTemplateParam = require('./coremodule/noTemplateParam.js');
+function parserInit(text, namespace, title, option){
   var wikiparser = new WikiParser();
   wikiparser.namespace = namespace;
   wikiparser.title = title;
@@ -16,13 +17,11 @@ function parserInit(text,namespace,title){
   //서비스 언어를 설정
   wikiparser.local = "korean";
 
-
   //목차를 표시할 최소 소제목 개수
   wikiparser.showTocMin = 4;
-
   nowikiProcess(wikiparser);
   noTemplatePartial(wikiparser);
-
+  noTemplateParam(wikiparser);
   require('./coremodule/coreSettings.js')(wikiparser);
   //Extensions
   require('./someExtension.js').use(wikiparser);

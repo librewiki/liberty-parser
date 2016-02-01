@@ -405,8 +405,6 @@ WikiParser.prototype.Parse = function(text){
       stack[stack.length - 1].children.push(new iter.hooker.NODE());
       break;
     }
-  //  console.log(text[iter.position-5]+text[iter.position-4]+text[iter.position-3]+text[iter.position-2]+text[iter.position-1]+text[iter.position]+
-  //    text[iter.position+1]+text[iter.position+2]+text[iter.position+3]+text[iter.position+4]+text[iter.position+5]);
     lastIdx = iter.position;
   }
   if(lastIdx <= text.length -1)
@@ -783,7 +781,20 @@ function TemplateCheck(wikiparser){
       if(depth===0){
         end = idx;
         var templateText = wikiparser.wikitext.substring(start+2,end);
-        var templateArr = templateText.split("|");
+        var templateArr = [];
+        //templateText.split("|");
+        var barIdx = -1, innerBraceDepth = 0;
+        for (var i = 0; i < templateText.length; i++) {
+          if (innerBraceDepth === 0 && templateText.charAt(i)=="|") {
+            templateArr.push(templateText.substring(barIdx+1,i));
+            barIdx = i;
+          } else if (templateText.charAt(i)==="{") {
+            innerBraceDepth++;
+          } else if (templateText.charAt(i)==="}") {
+            innerBraceDepth--;
+          }
+        }
+        templateArr.push(templateText.substring(barIdx+1));
         templateArr[0] = templateArr[0].trim();
         templateArr.splice(0,0,true,start,end);
         wikiparser.templateList.push(templateArr);
@@ -815,10 +826,13 @@ function TemplatePatialTags(template){
   replace(/\r\n/g,"\n").
   replace(/\r/g,"\n").
   replace(/<\/?includeonly>/gi,"").
-  replace(/(?:.|\n)*<onlyinclude>(.*)<\/onlyinclude>(?:.|\n)*/gi,'$1').
-  replace(/<noinclude>.*<\/noinclude>/gi,"");
+  replace(/(?:.|\n)*<onlyinclude>(.*?)<\/onlyinclude>(?:.|\n)*/gi,'$1').
+  replace(/<noinclude>.*?<\/noinclude>/gi,"");
   template[0]=text;
 }
+
+
+
 function TemplateParameterReplace(template){
   TemplatePatialTags(template);
   var arrObj = [template[3]];
@@ -828,7 +842,7 @@ function TemplateParameterReplace(template){
     var iter = template[i];
     var temp = iter.split("=");
     if(!isNull(temp[1])){
-      arrObj[temp[0]]=temp[1];
+      arrObj[temp[0].trim()]=temp[1].trim();
     }else{
       arrObj.push(iter);
     }
