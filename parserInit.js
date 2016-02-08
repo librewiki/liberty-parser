@@ -3,10 +3,13 @@ var nowikiProcess = require('./coremodule/nowikiProcess.js');
 var templatePartialTags = require('./coremodule/templatePartialTags.js');
 var noTemplatePartial = templatePartialTags.noTemplatePartial;
 var noTemplateParam = require('./coremodule/noTemplateParam.js');
-function parserInit(text, namespace, title, option){
+var nsParser = require('../../modules/namespaceParser.js');
+function parserInit(text, fullTitle, option){
   var wikiparser = new WikiParser();
-  wikiparser.namespace = namespace;
-  wikiparser.title = title;
+  wikiparser.fullTitle = fullTitle;
+  var temp = nsParser(fullTitle);
+  wikiparser.namespace = temp[0];
+  wikiparser.title = temp[1];
   wikiparser.wikitext = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
   wikiparser.AddInterwiki("./interwiki.json");
 

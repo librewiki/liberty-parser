@@ -3,5 +3,6 @@
   "left"  : "left",
   "thumb" : "thumb",
   "file" : "file",
-  "redirect" : "redirect"
+  "redirect" : "redirect",
+  "category" : "category"
 }

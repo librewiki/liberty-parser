@@ -71,17 +71,25 @@ Render.link = function(wikiparser, node) {
   var srcFront = '';
   var srcEnd = '';
   var isInterwiki = false;
+  var isLinkToCategory = false;
+  var isCategory = false;
   var i18n = {
-    file:new RegExp(wikiparser.i18nKey("file")+'.*',"i")
-    //  /(파일|File).* /i
+    file : new RegExp(wikiparser.i18nKey('file')+':.*', 'i'),
+    category : new RegExp(wikiparser.i18nKey('category')+':.*', 'i')
   };
   var intwikiRgx = new RegExp(wikiparser.InterwikiKey()+':.*',"i");
-  if (node.children[0].text[2]!==":") {
+  if (node.children[0].text.charAt(2) === ":") {
+    if (i18n.category.test(node.children[0].text)) {
+      isLinkToCategory = true;
+    }
+    node.children[0].text = node.children[0].text.replace(":","");
+  } else {
+    if (i18n.category.test(node.children[0].text)) {
+      isCategory = true;
+    }
     if (i18n.file.test(node.children[0].text)) {
       return Render.link.FileRender(wikiparser, node);
     }
-  } else {
-    node.children[0].text = node.children[0].text.replace(":","");
   }
   var inter = node.children[0].text.match(intwikiRgx);
   if (!isNull(inter)) {
@@ -91,8 +99,11 @@ Render.link = function(wikiparser, node) {
     srcEnd = x[1];
   }
   res.push('<a class="');
+  if (isLinkToCategory) res.push('linkToCat ');
+  else if (isCategory) res.push('category ');
   if (isInterwiki) res.push('interwiki ');
-  res.push('" href="');
+  else res.push('new wikilink');
+  res.push('"href="');
   res.push(srcFront);
   if (node.children[0].type == "TEXT") {
     if (node.children[0].text.startsWith("[[")) {
@@ -113,6 +124,9 @@ Render.link = function(wikiparser, node) {
   }
   else{
     showText = innerText.slice(1).join("|");
+  }
+  if (linkText === wikiparser.fullTitle) {
+    return '<b>' + showText + '</b>';
   }
   if (isInterwiki) linkText=linkText.replace(inter[1]+":","");
   res.push(linkText);
@@ -246,7 +260,10 @@ Render.ref = function(wikiparser, node) {
     });
   }
   var ref = wikiparser.references[wikiparser.references.length-1];
-  res.push('<sup id="cite_ref-');
+  res.push('<sup ');
+  res.push('title="');
+  res.push(content.replace(/"/g,'&quot;'));
+  res.push('" id="cite_ref-');
   if (ref.name!==null) {
     res.push(ref.name);
     res.push('_');

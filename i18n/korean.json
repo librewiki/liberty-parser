@@ -3,5 +3,6 @@
   "left" : "왼쪽",
   "thumb" : "섬네일",
   "file" : "파일",
-  "redirect" : "넘겨주기"
+  "redirect" : "넘겨주기",
+  "category" : "분류"
 }

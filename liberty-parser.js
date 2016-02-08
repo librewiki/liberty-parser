@@ -195,6 +195,7 @@ HookMarker.prototype.IsGreaterThan = function(marker){
 var WikiParser = require('./coremodule/WikiParser');
 WikiParser.prototype.AddHooker = function(hooker){
   this.hookers.push(hooker);
+  return this;
 };
 //nation is string(e.g. "korean")
 WikiParser.prototype.Addi18n = function(lang){
@@ -879,17 +880,18 @@ function TemplateParameterReplace(template){
 }
 module.exports.TemplateReplace = TemplateReplace;
 function DoParse(wikiparser){
-  wikiparser.AddHooker(new TableHooker());
-  wikiparser.AddHooker(new BoldTagHooker());
-  wikiparser.AddHooker(new ItalicHooker());
-  wikiparser.AddHooker(new BRTagHooker());
-  wikiparser.AddHooker(new LinkHooker());
-  wikiparser.AddHooker(new ExtLinkHooker());
-  wikiparser.AddHooker(new HeadingHooker());
-  wikiparser.AddHooker(new RefHooker());
-  wikiparser.AddHooker(new ReferencesHooker());
-  wikiparser.AddHooker(new ListHooker());
-  wikiparser.AddHooker(new HRHooker());
+  wikiparser
+  .AddHooker(new TableHooker())
+  .AddHooker(new BoldTagHooker())
+  .AddHooker(new ItalicHooker())
+  .AddHooker(new BRTagHooker())
+  .AddHooker(new LinkHooker())
+  .AddHooker(new ExtLinkHooker())
+  .AddHooker(new HeadingHooker())
+  .AddHooker(new RefHooker())
+  .AddHooker(new ReferencesHooker())
+  .AddHooker(new ListHooker())
+  .AddHooker(new HRHooker());
   var a = wikiparser.Parse(wikiparser.wikitext);
   var rendered = '';
   var Renderer = require('./wikiRenderer.js');

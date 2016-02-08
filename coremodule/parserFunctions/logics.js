@@ -1,7 +1,5 @@
 var math = require('mathjs');
 var mysql = require('mysql');
-var dbconfig = require('../../../../config/db_config');
-var pool = mysql.createPool(dbconfig);
 var pageExist = require('../../../../modules/pageExist.js');
 // #if, #ifeq, #ifexist, #ifexpr
 var pfs = {
@@ -62,8 +60,8 @@ var pfs = {
       if (typeof template[4] !== 'string') template[4] = '';
       if (typeof template[5] !== 'string') template[5] = '';
       //async function cannot execute directly.
-      template[0] = function(callback) {
-        pageExist(pool, text1, function(err, result) {
+      template[0] = function(connection, callback) {
+        pageExist(connection, text1, function(err, connection, result) {
           if (err) {
             template[0] = err+'';
             return callback(err);
