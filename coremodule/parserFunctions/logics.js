@@ -1,7 +1,7 @@
 var math = require('mathjs');
 var mysql = require('mysql');
 var pageExist = require('../../../../modules/pageExist.js');
-// #if, #ifeq, #ifexist, #ifexpr
+// #if, #ifeq, #ifexist, #ifexpr, #switch
 var pfs = {
   s_if : {
     use :
@@ -11,7 +11,6 @@ var pfs = {
     },
     execute :
     function(wikiparser, template) {
-      console.log("asdf",template);
       var text = template[3].split(':')[1].trim();
       if (typeof template[4] !== 'string') template[4] = '';
       if (typeof template[5] !== 'string') template[5] = '';
@@ -20,7 +19,6 @@ var pfs = {
       } else {
         template[0] = template[5].trim();
       }
-      console.log("asdf1",template);
       return;
     }
   },
@@ -101,8 +99,39 @@ var pfs = {
       if (res) {
         template[0] = text2;
       } else {
-        template[1] = text3;
+        template[0] = text3;
       }
+      return;
+    }
+  },
+  s_switch : {
+    use :
+    function(wikiparser) {
+      var pfList = wikiparser.pfList;
+      pfList.push(['#switch',this.execute]);
+    },
+    execute :
+    function(wikiparser, template) {
+      var str = template[3].split(':')[1].trim();
+      console.log(str);
+      var other = -1;
+      for (var i = 4; i < template.length; i++) {
+        var arr = template[i].split('=');
+        console.log(arr);
+        if (arr[1] === undefined) {
+          other = i;
+          continue;
+        }
+        if (arr[0].trim() == str) {
+          template[0] = arr[1].trim();
+          return;
+        }
+      }
+      if (other === -1) {
+        template[0] = '';
+        return;
+      }
+      template[0] = template[other].trim();
       return;
     }
   }

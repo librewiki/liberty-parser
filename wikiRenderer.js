@@ -139,11 +139,11 @@ Render.link = function(wikiparser, node) {
 Render.link.FileRender = function(wikiparser, node){
   var res = [];
   var imgFolder = "/file/";
-  var imglink = "/wiki/";
+  var imglink = "";
   var innerText = wikiparser.OnlyText(node);
   var data = innerText.substring(2,innerText.length - 2).split('|');
   var len = data.length;
-  res.push('<a class="image" href="');
+  res.push('<a class="image new" href="');
   res.push(imglink);
   res.push(data[0]);
   res.push('"><img ');
