@@ -638,8 +638,7 @@ Render.list = function(wikiparser, node) {
       if (prfs.indexOf(line[k]) === -1) {
         if (subnodeStack.length===0) {
           subnodeStack.push(new ListSubNode(line.substr(0,k),line[k-1],line.substr(k),false));
-        }
-        else {
+        } else {
           while (subnodeStack.length>0) {
             var last = subnodeStack[subnodeStack.length-1];
             var x = Render.list.common(last.prefixStr,line.substr(0,k));

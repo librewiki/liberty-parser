@@ -172,7 +172,7 @@ var MARK_TYPE = {
   OPEN_TAG:true,
   CLOSE_TAG:false
 };
-function HookMarker(hooker,markType,pos){
+function HookMarker(hooker,markType,pos) {
   if(isNull(hooker)) throw "hooker is undefined!";
   if(isNull(markType)) throw "mark type is undefined!";
   this.hooker = hooker;
@@ -410,7 +410,6 @@ WikiParser.prototype.Parse = function(text){
   }
   if(lastIdx <= text.length -1)
   stack[stack.length - 1].children.push(new TextNode(text.substring(lastIdx, text.length)));
-
   stack[0].Process();
   return stack[0];
 };
